@@ -32,4 +32,4 @@ Have a search pattern or technique you'd like to add? Open a PR! Each cookbook s
 
 ## License
 
-See [LICENSE](./LICENSE) for details.
+This repository is MIT licensed. Sample data in the Hybrid Search cookbook uses transcripts from [kjaymiller/conduit-transcripts](https://github.com/kjaymiller/conduit-transcripts) (MIT License, Jay Miller).

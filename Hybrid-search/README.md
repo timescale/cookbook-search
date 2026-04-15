@@ -114,6 +114,11 @@ You should see `CREATE EXTENSION` printed after each command — that means it w
 
 ## Step 1: Create a Table with Text and Embeddings
 
+> **Quick start:** To run all the setup at once (extensions, table, data, indexes), use the included [`setup.sql`](./setup.sql) file:
+> ```bash
+> psql -h localhost -U postgres -f setup.sql
+> ```
+
 This cookbook uses episode data from [Conduit](https://www.relay.fm/conduit), a productivity podcast by Jay Miller and Kathy Campbell on Relay FM. Transcripts are from the [conduit-transcripts](https://github.com/kjaymiller/conduit-transcripts) repo (MIT License, Jay Miller).
 
 ```sql
@@ -379,13 +384,15 @@ Things to be aware of in pg_textsearch 1.0:
 
 ## What's Next
 
-pg_textsearch 1.0 is the foundation. Boolean query operators (AND, OR, NOT), background compaction, and expression index support are planned for upcoming releases. For the full architecture and benchmark deep-dive, see [pg_textsearch 1.0: How We Built a BM25 Search Engine on Postgres Pages](link-to-part-1).
+pg_textsearch 1.0 is the foundation. Boolean query operators (AND, OR, NOT), background compaction, and expression index support are planned for upcoming releases.
 
 ## Resources
 
 - [pg_textsearch on GitHub](https://github.com/timescale/pg_textsearch)
 - [pgvectorscale on GitHub](https://github.com/timescale/pgvectorscale)
 - [pg_textsearch_demo](https://github.com/rajaraodv/pg_textsearch_demo) — working hybrid search demo with web UI
+- [Conduit Podcast](https://www.relay.fm/conduit) — the podcast used as sample data in this cookbook
+- [Conduit Transcripts](https://github.com/kjaymiller/conduit-transcripts) — MIT-licensed transcripts by Jay Miller
 - [Tiger Cloud](https://www.tigerdata.com/search) — try it without any setup
 - [Understanding DiskANN](https://www.tigerdata.com/blog/understanding-diskann)
 - [It's 2026, Just Use Postgres](https://www.tigerdata.com/blog/its-2026-just-use-postgres)
