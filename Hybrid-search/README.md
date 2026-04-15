@@ -33,9 +33,48 @@ Tiger Cloud services running PostgreSQL 17+ already have pg_textsearch and pgvec
 
 That's it — you can skip ahead to the next section.
 
-### Option 2: Run PostgreSQL on Your Own Machine
+### Option 2: Use Docker (recommended for local development)
 
-If you prefer to run everything locally, you'll need to install the extensions yourself.
+If you want to run everything locally without installing PostgreSQL or extensions by hand, use the [`timescaledb-docker-ha`](https://github.com/timescale/timescaledb-docker-ha) image. It ships with PostgreSQL, TimescaleDB, pgvector, pgvectorscale, and pg_textsearch pre-installed.
+
+**Step 1: Pull and run the container**
+
+```bash
+docker run -d --name hybrid-search \
+  -p 5432:5432 \
+  -e POSTGRES_PASSWORD=password \
+  timescale/timescaledb-ha:pg17
+```
+
+This starts a PostgreSQL 17 instance on port 5432. Change the password to something more secure if you plan to keep this running.
+
+> **Apple Silicon note:** The image supports `arm64`, so it runs natively on M-series Macs — no Rosetta needed.
+
+**Step 2: Connect to your database**
+
+```bash
+psql -h localhost -U postgres
+```
+
+Enter the password you set in Step 1 when prompted.
+
+**Step 3: Create the extensions**
+
+```sql
+-- Install keyword search (BM25)
+CREATE EXTENSION pg_textsearch;
+
+-- Install vector search (this automatically installs pgvector too)
+CREATE EXTENSION vectorscale CASCADE;
+```
+
+You should see `CREATE EXTENSION` printed after each command — that means it worked. You're all set!
+
+> **Tip:** `shared_preload_libraries` is already configured in the Docker image, so there's no need to edit `postgresql.conf` or restart the server.
+
+### Option 3: Run PostgreSQL on Your Own Machine (manual install)
+
+If you prefer to run everything locally without Docker, you'll need to install the extensions yourself.
 
 **Step 1: Download the extensions**
 
@@ -75,11 +114,15 @@ You should see `CREATE EXTENSION` printed after each command — that means it w
 
 ## Step 1: Create a Table with Text and Embeddings
 
+This cookbook uses episode data from [Conduit](https://www.relay.fm/conduit), a productivity podcast by Jay Miller and Kathy Campbell on Relay FM. Transcripts are from the [conduit-transcripts](https://github.com/kjaymiller/conduit-transcripts) repo (MIT License, Jay Miller).
+
 ```sql
-CREATE TABLE documents (
+CREATE TABLE episodes (
   id bigserial PRIMARY KEY,
   title text,
-  content text,
+  description text,
+  pub_date date,
+  url text,
   embedding vector(1536)  -- e.g. OpenAI text-embedding-3-small
 );
 ```
@@ -87,15 +130,43 @@ CREATE TABLE documents (
 Insert some sample data:
 
 ```sql
-INSERT INTO documents (title, content) VALUES
-  ('PostgreSQL Overview',
-   'PostgreSQL is a powerful open source relational database system'),
-  ('Search Technology',
-   'Full text search enables finding relevant documents quickly'),
-  ('Information Retrieval',
-   'BM25 is a ranking function used by search engines to estimate relevance'),
-  ('Database Indexing',
-   'An index is a data structure that improves the speed of data retrieval');
+INSERT INTO episodes (title, description, pub_date, url) VALUES
+  ('1: Our Systems: The Unicorn & Silk Sonic Methods',
+   'For most people, productivity starts with their system. Jay and Kathy talk about their own brand of productivity and what their personal systems look like.',
+   '2021-07-15', 'https://www.relay.fm/conduit/1'),
+  ('5: Sustained Progress: Over Being Overwhelmed',
+   'Millennial Falcon wants to know how to make SUSTAINED progress on projects that feel more like a marathon, not a sprint. Kathy just made a big move and gives us some of the tips that she used to make this challenge a bit more manageable.',
+   '2021-09-09', 'https://www.relay.fm/conduit/5'),
+  ('13: Happiness First, Productivity Second',
+   'Kathy has lots to be thankful for, Jay is unfortunately unwell, but Rosemary was on standby! Time to review the end of the year and how you finish things or let them go, before getting started on the next new adventure.',
+   '2021-12-30', 'https://www.relay.fm/conduit/13'),
+  ('19: Eating the Devil''s Spaghetti: Combating Imposter Syndrome',
+   'How do we learn to shut up and take the compliment? How about with a fresh bowl of imp-pasta!',
+   '2022-03-24', 'https://www.relay.fm/conduit/19'),
+  ('48: Long Projects: Remove the Concept of Time',
+   'We''ve got a longer than usual period between our next live recording so we''re taking the time to think about some longer connections. Tune in to hear how we''re going about it and longer projects in general.',
+   '2023-05-04', 'https://www.relay.fm/conduit/48'),
+  ('57: I Need Help to Get the Help',
+   'Kathy and Jay need help to meet the demands of those around them. They need help getting help!',
+   '2023-09-07', 'https://www.relay.fm/conduit/57'),
+  ('61: The Conduit Burnout Candle',
+   'Kathy and Jay are feeling the burn(out) well maybe the steps before the burnout. We''ve taken blowtorches to our candles and now we''re telling you the warning signs we see that this next season might be a little tough.',
+   '2023-11-02', 'https://www.relay.fm/conduit/61'),
+  ('81: Brett''s Mental Health (and Tech) Corner',
+   'Kathy is still on a secret mission so Jay is joined by Brett Terpstra the Internet''s mad scientist to talk mental health''s link to productivity.',
+   '2024-08-08', 'https://www.relay.fm/conduit/81'),
+  ('100: It''s Episode 100!!',
+   'Grab your tissues, it''s our most guest filled episode ever. We also discuss what Conduit is, what it means to us, and how it has affected our lives.',
+   '2025-05-01', 'https://www.relay.fm/conduit/100'),
+  ('107: Bored as a Benefit',
+   'Jay and Kathy explore the idea that boredom isn''t the enemy of productivity — it might actually be the secret ingredient.',
+   '2025-08-07', 'https://www.relay.fm/conduit/107'),
+  ('115: Productivity Inside Systems You Don''t Control',
+   'Kathy is joined by the Nameless of the Show, Nameless, to talk about how to be productive when the system is one you don''t control.',
+   '2025-11-21', 'https://www.relay.fm/conduit/115'),
+  ('117: The Year to be Selfish',
+   'Kathy and Jay discuss end-of-year planning. Kathy''s 2026 theme: "The Year to Be Selfish." Jay commits to boundaries and self-preservation. They cover nonprofit transitions and preparing for the annual systems check.',
+   '2025-12-18', 'https://www.relay.fm/conduit/117');
 ```
 
 In a real application, you would also populate the `embedding` column with vectors from an embedding model. See Raja Rao's [pg_textsearch_demo](https://github.com/rajaraodv/pg_textsearch_demo) for a working example with OpenAI embeddings.
@@ -106,11 +177,11 @@ In a real application, you would also populate the `embedding` column with vecto
 
 ```sql
 -- BM25 index for keyword search
-CREATE INDEX docs_bm25_idx ON documents
-  USING bm25(content) WITH (text_config = 'english');
+CREATE INDEX episodes_bm25_idx ON episodes
+  USING bm25(description) WITH (text_config = 'english');
 
 -- StreamingDiskANN index for vector similarity search
-CREATE INDEX docs_embedding_idx ON documents
+CREATE INDEX episodes_embedding_idx ON episodes
   USING diskann (embedding vector_cosine_ops);
 ```
 
@@ -125,9 +196,9 @@ The `USING diskann` syntax creates a pgvectorscale StreamingDiskANN index, which
 The `<@>` operator returns a negative BM25 score. Scores are negated so that Postgres's default ascending `ORDER BY` returns the most relevant results first (a score of -15.3 is more relevant than -8.2):
 
 ```sql
-SELECT title, content <@> 'database ranking' AS score
-FROM documents
-ORDER BY content <@> 'database ranking'
+SELECT title, description <@> 'burnout productivity' AS score
+FROM episodes
+ORDER BY description <@> 'burnout productivity'
 LIMIT 10;
 ```
 
@@ -135,10 +206,10 @@ You can combine BM25 ranking with standard `WHERE` clauses. The planner detects 
 
 ```sql
 -- BM25 ranking with a filter
-SELECT title, content <@> 'search' AS score
-FROM documents
-WHERE title ILIKE '%search%'
-ORDER BY content <@> 'search'
+SELECT title, description <@> 'help' AS score
+FROM episodes
+WHERE pub_date >= '2023-01-01'
+ORDER BY description <@> 'help'
 LIMIT 10;
 ```
 
@@ -151,7 +222,7 @@ With embeddings populated and the StreamingDiskANN index in place, vector search
 ```sql
 -- $1 is the query embedding vector
 SELECT title, embedding <=> $1 AS distance
-FROM documents
+FROM episodes
 ORDER BY embedding <=> $1
 LIMIT 10;
 ```
@@ -165,17 +236,17 @@ Reciprocal Rank Fusion combines results from multiple ranked lists by summing th
 ```sql
 WITH bm25_results AS (
   SELECT id, ROW_NUMBER() OVER (
-    ORDER BY content <@> 'database optimization'
+    ORDER BY description <@> 'mental health boundaries'
   ) AS rank
-  FROM documents
-  ORDER BY content <@> 'database optimization'
+  FROM episodes
+  ORDER BY description <@> 'mental health boundaries'
   LIMIT 20
 ),
 vector_results AS (
   SELECT id, ROW_NUMBER() OVER (
     ORDER BY embedding <=> $1  -- $1 is the query embedding vector
   ) AS rank
-  FROM documents
+  FROM episodes
   ORDER BY embedding <=> $1
   LIMIT 20
 )
@@ -184,7 +255,7 @@ SELECT
   d.title,
   COALESCE(1.0 / (60 + b.rank), 0)
     + COALESCE(1.0 / (60 + v.rank), 0) AS rrf_score
-FROM documents d
+FROM episodes d
 LEFT JOIN bm25_results b ON d.id = b.id
 LEFT JOIN vector_results v ON d.id = v.id
 WHERE b.id IS NOT NULL OR v.id IS NOT NULL
@@ -196,10 +267,10 @@ LIMIT 10;
 
 - The constant 60 is the standard smoothing parameter
 - Each subquery retrieves the top 20 results from its respective index (BM25 or vector)
-- Documents found by both searches get contributions from both ranks, pushing them higher
+- Episodes found by both searches get contributions from both ranks, pushing them higher
 - The `COALESCE(..., 0)` handles documents that appear in only one result set
 
-**Why this works for RAG:** Consider a RAG system searching technical documentation. A user asks about "error PG-1234 connection refused." BM25 finds documents containing the exact error code. Vector search finds documents about connection troubleshooting that use different terminology. RRF fuses both, and the document that both matches the error code and discusses the right fix ranks highest.
+**Why this works for RAG:** Consider a RAG system searching a podcast archive. A user asks "how do I deal with feeling like a fraud at work?" BM25 finds the episode titled "Eating the Devil's Spaghetti: Combating Imposter Syndrome" because it matches "imposter" after stemming. Vector search finds episodes about burnout, boundaries, and mental health that are semantically related but use different words. RRF fuses both, surfacing the imposter syndrome episode at the top while also ranking related episodes about self-doubt and mental health higher.
 
 ---
 
@@ -224,10 +295,10 @@ CREATE INDEX ON large_table
 Each BM25 index covers a single text column. To search across multiple columns, create a generated column:
 
 ```sql
-ALTER TABLE documents ADD COLUMN search_text text
-  GENERATED ALWAYS AS (title || ' ' || content) STORED;
+ALTER TABLE episodes ADD COLUMN search_text text
+  GENERATED ALWAYS AS (title || ' ' || description) STORED;
 
-CREATE INDEX ON documents USING bm25(search_text)
+CREATE INDEX ON episodes USING bm25(search_text)
   WITH (text_config = 'english');
 ```
 
@@ -237,11 +308,11 @@ pg_textsearch does not support native phrase queries in 1.0. Use a BM25 over-fet
 
 ```sql
 SELECT * FROM (
-  SELECT * FROM documents
-  ORDER BY content <@> 'database system'
+  SELECT * FROM episodes
+  ORDER BY description <@> 'year end planning'
   LIMIT 100  -- over-fetch to compensate for post-filter
 ) sub
-WHERE content ILIKE '%database system%'
+WHERE description ILIKE '%end-of-year%'
 LIMIT 10;
 ```
 
@@ -251,10 +322,10 @@ Use Postgres's built-in `ts_headline()` for snippet generation:
 
 ```sql
 SELECT title,
-  ts_headline('english', content, to_tsquery('english', 'database')),
-  content <@> 'database' AS score
-FROM articles
-ORDER BY content <@> 'database'
+  ts_headline('english', description, to_tsquery('english', 'productivity')),
+  description <@> 'productivity' AS score
+FROM episodes
+ORDER BY description <@> 'productivity'
 LIMIT 10;
 ```
 
@@ -266,7 +337,7 @@ pgvectorscale's StreamingDiskANN index uses smart defaults. To fine-tune accurac
 -- Higher values = more accurate, slightly slower
 SET LOCAL diskann.query_rescore = 150;
 
-SELECT * FROM documents
+SELECT * FROM episodes
 ORDER BY embedding <=> $1
 LIMIT 10;
 ```
@@ -276,10 +347,10 @@ LIMIT 10;
 Filter out low-relevance BM25 results:
 
 ```sql
-SELECT title, content <@> to_bm25query('database', 'docs_bm25_idx') AS score
-FROM documents
-WHERE content <@> to_bm25query('database', 'docs_bm25_idx') < -1.0
-ORDER BY content <@> to_bm25query('database', 'docs_bm25_idx')
+SELECT title, description <@> to_bm25query('burnout', 'episodes_bm25_idx') AS score
+FROM episodes
+WHERE description <@> to_bm25query('burnout', 'episodes_bm25_idx') < -1.0
+ORDER BY description <@> to_bm25query('burnout', 'episodes_bm25_idx')
 LIMIT 10;
 ```
 
@@ -288,7 +359,7 @@ LIMIT 10;
 Sustained incremental inserts create multiple BM25 segments from repeated memtable spills. Consolidate for optimal query performance:
 
 ```sql
-SELECT bm25_force_merge('docs_bm25_idx');
+SELECT bm25_force_merge('episodes_bm25_idx');
 ```
 
 ---
