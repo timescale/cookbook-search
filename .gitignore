@@ -1,0 +1,40 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor and IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Node
+node_modules/
+package-lock.json
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data files (keep examples small, don't commit large datasets)
+*.csv
+*.parquet
+!**/sample_data/*.csv
+
+# Logs
+*.log
