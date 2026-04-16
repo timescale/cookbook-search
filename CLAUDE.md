@@ -6,7 +6,6 @@ A collection of step-by-step tutorials demonstrating search capabilities in Post
 
 ```
 cookbook-search/
-├── .env.example              # Template for API keys (copy to .env)
 ├── .gitignore                # Excludes .env, caches, data files
 ├── LICENSE                   # Apache 2.0
 ├── README.md                 # Repo overview, prerequisites, getting started
@@ -15,7 +14,9 @@ cookbook-search/
     ├── README.md             # Full tutorial walkthrough
     ├── setup.sql             # One-command DB setup
     ├── embed.py              # Embedding generation script
-    └── requirements.txt      # Python dependencies
+    ├── requirements.txt      # Python dependencies
+    ├── .env.example          # Template for API keys (copy to .env)
+    └── .env                  # Your actual keys (gitignored)
 ```
 
 ## Skills
@@ -48,7 +49,7 @@ Reports results as a pass/fail checklist with specific fix instructions for each
 
 - **Database:** PostgreSQL 17+ with pg_textsearch and pgvectorscale extensions
 - **Python:** 3.9+, managed with uv (link to pip/conda as alternatives)
-- **Environment variables:** stored in `.env` at repo root, loaded via `python-dotenv`
+- **Environment variables:** stored in `.env` within each cookbook folder, loaded via `python-dotenv`
 - **SQL setup files:** idempotent with `IF NOT EXISTS`, commented section headers
 - **License:** Apache 2.0 for the repo; dataset licenses noted individually
 - **Sample data:** Use real, attributed datasets — avoid generic placeholders
@@ -59,5 +60,5 @@ Reports results as a pass/fail checklist with specific fix instructions for each
 2. Use `/write-tutorial` to scaffold the README and supporting files
 3. Add an entry to the root README's "What's Inside" table
 4. Include any new Python dependencies in a `requirements.txt` within the folder
-5. Add any new env vars to `.env.example`
+5. Add a `.env.example` in the cookbook folder with any required env vars
 6. Run `/tutorial-checker` to validate everything before merging

@@ -20,7 +20,7 @@ Verify the tutorial folder contains the required files:
 - [ ] `setup.sql` exists (for database tutorials) OR equivalent setup script
 - [ ] `requirements.txt` exists (if Python code is present)
 - [ ] At least one supporting script exists (e.g., `embed.py`, `load.py`)
-- [ ] `.env.example` exists at the repo root with all required env vars
+- [ ] `.env.example` exists in the tutorial folder with all required env vars
 - [ ] `.gitignore` at repo root excludes `.env` and includes `!.env.example`
 - [ ] `LICENSE` file exists at repo root
 - [ ] `CLAUDE.md` exists at repo root
@@ -86,7 +86,7 @@ Verify that names and references are consistent across all files:
 - [ ] Index names match across `README.md`, `setup.sql`, and all scripts
 - [ ] Environment variable names in `.env.example` match what scripts expect
 - [ ] `requirements.txt` lists every import used in Python scripts
-- [ ] Python scripts import `load_dotenv` and load from the correct `.env` path
+- [ ] Python scripts import `load_dotenv` and load `.env` from the tutorial folder (same directory as the script)
 - [ ] The number of sample data rows is consistent between README, setup.sql, and any script output references (e.g., "Found 12 episodes")
 
 **How to check:** Extract table names, column names, and index names from each file and cross-reference. Grep for env var names across `.env.example` and all scripts.

@@ -20,21 +20,117 @@ Before you can run the examples in this cookbook, you need a PostgreSQL database
 - **PostgreSQL 17 or 18** — This is the database itself. If you don't have it installed yet, you can download it from [postgresql.org](https://www.postgresql.org/download/) or use Tiger Cloud (see Option 1 below).
 - **pg_textsearch** — A PostgreSQL extension that powers keyword search (also called BM25 search). Think of it like the search bar on a website: you type words, and it finds matching results.
 - **pgvectorscale** — A PostgreSQL extension that powers vector search (also called semantic search). This finds results based on *meaning*, not just exact word matches. It depends on another extension called **pgvector**, which will be installed automatically.
+- **Docker** — Required if you want to run PostgreSQL locally without a manual install (see Option 2 below). Download from [docker.com/get-started](https://www.docker.com/get-started/).
 - **Python 3.9+** — We'll be using a Python script to generate embeddings for each episode using OpenAI's API. Download Python from [python.org](https://www.python.org/downloads/) if you don't have it installed.
 - **An OpenAI API key** — Needed to generate embeddings with `text-embedding-3-small`. Get one at [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
 - **A Python package manager** — We'll be using [uv](https://docs.astral.sh/uv/) as the package manager for this tutorial, but feel free to use your package manager of choice. [pip](https://pip.pypa.io/) and [conda](https://docs.conda.io/) will also work here.
 
 ### Option 1: Use Tiger Cloud (recommended for beginners)
 
-This is the fastest way to get started — no installation required.
+This is the fastest way to get started — no installation required. Tiger Cloud services running PostgreSQL 17+ already have pg_textsearch and pgvectorscale installed and ready to use.
 
-Tiger Cloud services running PostgreSQL 17+ already have pg_textsearch and pgvectorscale installed and ready to use. You just need to:
+There are three ways to set up a Tiger Cloud service: via the **web console**, the **Tiger CLI**, or the **Tiger MCP** (for AI-assisted workflows). Pick whichever fits your style.
+
+#### 1a. Web console
 
 1. Sign up or log in at the [Tiger Cloud console](https://console.cloud.timescale.com)
 2. Create a new service (or use an existing one running Postgres 17+)
 3. Open the SQL editor in the console
 
 That's it — you can skip ahead to the next section.
+
+#### 1b. Tiger CLI
+
+The [Tiger CLI](https://www.tigerdata.com/docs/get-started/quickstart/cli-rest-api) lets you create and manage Tiger Cloud services from your terminal.
+
+**Step 1: Install the Tiger CLI**
+
+macOS (Homebrew):
+```bash
+brew install --cask timescale/tap/tiger-cli
+```
+
+Linux (Debian/Ubuntu):
+```bash
+curl -s https://packagecloud.io/install/repositories/timescale/tiger-cli/script.deb.sh | sudo os=any dist=any bash
+sudo apt-get install tiger-cli
+```
+
+Windows (PowerShell):
+```powershell
+irm https://cli.tigerdata.com/install.ps1 | iex
+```
+
+Cross-platform:
+```bash
+curl -fsSL https://cli.tigerdata.com | sh
+```
+
+**Step 2: Log in to Tiger Cloud**
+
+```bash
+tiger auth login
+```
+
+This opens your browser. Log in and click **Authorize**. If you have multiple projects, the CLI prompts you to choose one.
+
+**Step 3: Create a service**
+
+```bash
+tiger service create
+```
+
+This creates a service with 0.5 CPU / 2 GB memory by default. For a free-tier service:
+
+```bash
+tiger service create --memory shared --cpu shared
+```
+
+**Step 4: Verify your service is running**
+
+```bash
+tiger service list
+```
+
+You should see your new service with a `Running` status. Connect to it with `psql` using the service URL from the config file downloaded during creation, then skip ahead to the next section.
+
+#### 1c. Tiger MCP (AI-assisted)
+
+If you're using an AI coding assistant like [Claude Code](https://claude.ai/code), [Cursor](https://cursor.sh), or [VS Code](https://code.visualstudio.com/), the Tiger MCP lets your assistant create services and run SQL directly.
+
+Tiger MCP is bundled with the Tiger CLI, so install and authenticate with the CLI first (see Step 1 and Step 2 in the CLI section above), then:
+
+**Step 1: Install Tiger MCP for your assistant**
+
+```bash
+tiger mcp install
+```
+
+Choose your MCP client from the list (e.g., `claude-code`, `cursor`, `windsurf`, `codex`, `gemini-cli`, `vscode`) and press Enter.
+
+> **Manual configuration:** If your client isn't listed, add this to your MCP config file:
+> ```json
+> {
+>   "mcpServers": {
+>     "tiger": {
+>       "command": "tiger",
+>       "args": ["mcp", "start"]
+>     }
+>   }
+> }
+> ```
+
+**Step 2: Use your assistant to manage Tiger Cloud**
+
+Start your AI assistant. It connects to Tiger MCP automatically. You can now use natural language to:
+
+- *"Create a new Tiger Cloud service called hybrid-search-demo"*
+- *"List my Tiger Cloud services"*
+- *"Run this SQL on my service: CREATE EXTENSION pg_textsearch;"*
+
+The assistant uses Tiger MCP tools behind the scenes — no need to leave your editor.
+
+> **Tip:** To verify Tiger MCP is active, ask your assistant: *"Is the Tiger MCP server active?"* You should see a summary of available tools.
 
 ### Option 2: Use Docker (recommended for local development)
 
@@ -343,7 +439,7 @@ uv pip install -r requirements.txt
 Copy the example environment file and add your OpenAI API key:
 
 ```bash
-cp ../.env.example ../.env
+cp .env.example .env
 ```
 
 Open the `.env` file and replace the placeholder with your actual key:
