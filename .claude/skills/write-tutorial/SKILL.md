@@ -28,10 +28,11 @@ Tutorial-Name/
 ├── setup.sql             # One-command setup (if DB-related): schema, data, indexes
 ├── requirements.txt      # Python dependencies (if applicable)
 └── script.py             # Supporting script(s) with clear docstrings
+├── .env.example          # Template with placeholder values for any required API keys
+└── .env                  # Actual keys (gitignored, never committed)
 ```
 
 At the repo root:
-- `.env.example` — template with placeholder values for any required API keys or config
 - `.gitignore` — must exclude `.env` and include `!.env.example`
 - `README.md` — root README linking to the tutorial with a file index table
 - `LICENSE` — appropriate open-source license
@@ -181,7 +182,7 @@ Link to: source repos, the dataset used, managed service options, relevant blog 
 ### Python scripts (`embed.py`, `load.py`, etc.)
 
 - Start with a docstring explaining what the script does, usage instructions, and configurable env vars
-- Use `python-dotenv` to load from a `.env` file — resolve the path relative to the script location
+- Use `python-dotenv` to load from a `.env` file in the same directory as the script
 - Use `os.getenv()` with sensible defaults for all config (host, port, user, password, database)
 - Print progress messages: what it's about to do, how many items, and a "Done!" summary
 - Make scripts idempotent where possible (e.g., skip rows that already have data)
@@ -211,7 +212,7 @@ Link to: source repos, the dataset used, managed service options, relevant blog 
 - [ ] Every concept is explained when first introduced
 - [ ] Every step has a verification command or expected output
 - [ ] All file paths, table names, and column names are consistent across README, setup.sql, and scripts
-- [ ] `.env.example` exists with placeholder values
+- [ ] `.env.example` exists in the tutorial folder with placeholder values
 - [ ] `.gitignore` excludes `.env` but includes `.env.example`
 - [ ] Dataset has proper attribution and license noted
 - [ ] Root README has a file index table and getting started instructions

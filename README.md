@@ -21,6 +21,8 @@ Each folder contains a self-contained cookbook focused on a specific search appr
 Before diving into any cookbook, make sure you have the following:
 
 - **PostgreSQL 17 or 18** — via [Tiger Cloud](https://console.cloud.timescale.com), [Docker](https://github.com/timescale/timescaledb-docker-ha), or a [local install](https://www.postgresql.org/download/)
+- **Docker** — required for local development without a manual PostgreSQL install. Get it at [docker.com/get-started](https://www.docker.com/get-started/)
+- **Tiger CLI** *(optional)* — manage Tiger Cloud services from the terminal or integrate with AI assistants via [Tiger MCP](https://www.tigerdata.com/docs/get-started/quickstart/mcp-cli). Install with `brew install --cask timescale/tap/tiger-cli` (macOS) or see the [CLI docs](https://www.tigerdata.com/docs/get-started/quickstart/cli-rest-api)
 - **Python 3.9+** — [python.org/downloads](https://www.python.org/downloads/)
 - **A Python package manager** — we use [uv](https://docs.astral.sh/uv/) in the tutorials, but [pip](https://pip.pypa.io/) and [conda](https://docs.conda.io/) work too
 - **An OpenAI API key** — for generating embeddings. Get one at [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
@@ -36,9 +38,10 @@ Before diving into any cookbook, make sure you have the following:
 
 2. **Set up your environment variables**
 
-   Copy the example environment file and add your API key:
+   Each cookbook folder has its own `.env.example` file. Copy it and add your API key:
 
    ```bash
+   cd Hybrid-search
    cp .env.example .env
    ```
 
@@ -58,6 +61,7 @@ Before diving into any cookbook, make sure you have the following:
    | [`Hybrid-search/setup.sql`](./Hybrid-search/setup.sql) | One-command setup: creates extensions, table, sample data, and indexes |
    | [`Hybrid-search/embed.py`](./Hybrid-search/embed.py) | Generates embeddings for the sample data using OpenAI's API |
    | [`Hybrid-search/requirements.txt`](./Hybrid-search/requirements.txt) | Python dependencies for the embedding script |
+   | [`Hybrid-search/.env.example`](./Hybrid-search/.env.example) | Template for your OpenAI API key — copy to `.env` and fill in |
 
 ## Contributing
 

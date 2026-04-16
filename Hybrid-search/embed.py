@@ -8,7 +8,7 @@ Usage:
     3. python embed.py
 
 By default, connects to localhost:5432 as user 'postgres' with password 'password'.
-Override with environment variables in your .env file:
+Override with environment variables in your .env file (in the Hybrid-search/ directory):
     OPENAI_API_KEY, PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE
 """
 
@@ -18,8 +18,8 @@ from dotenv import load_dotenv
 import psycopg2
 from openai import OpenAI
 
-# Load .env from the repo root (one level up from Hybrid-search/)
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+# Load .env from the Hybrid-search/ directory (same directory as this script)
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 # --- Configuration ---
 EMBEDDING_MODEL = "text-embedding-3-small"  # 1536 dimensions
@@ -64,7 +64,7 @@ def main():
     if not os.getenv("OPENAI_API_KEY"):
         print("Error: OPENAI_API_KEY is not set.")
         print("Copy .env.example to .env and add your key:")
-        print("  cp ../.env.example ../.env")
+        print("  cp .env.example .env")
         raise SystemExit(1)
 
     conn = psycopg2.connect(**DB_CONFIG)
