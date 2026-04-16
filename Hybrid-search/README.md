@@ -20,6 +20,9 @@ Before you can run the examples in this cookbook, you need a PostgreSQL database
 - **PostgreSQL 17 or 18** — This is the database itself. If you don't have it installed yet, you can download it from [postgresql.org](https://www.postgresql.org/download/) or use Tiger Cloud (see Option 1 below).
 - **pg_textsearch** — A PostgreSQL extension that powers keyword search (also called BM25 search). Think of it like the search bar on a website: you type words, and it finds matching results.
 - **pgvectorscale** — A PostgreSQL extension that powers vector search (also called semantic search). This finds results based on *meaning*, not just exact word matches. It depends on another extension called **pgvector**, which will be installed automatically.
+- **Python 3.9+** — We'll be using a Python script to generate embeddings for each episode using OpenAI's API. Download Python from [python.org](https://www.python.org/downloads/) if you don't have it installed.
+- **An OpenAI API key** — Needed to generate embeddings with `text-embedding-3-small`. Get one at [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
+- **A Python package manager** — We'll be using [uv](https://docs.astral.sh/uv/) as the package manager for this tutorial, but feel free to use your package manager of choice. [pip](https://pip.pypa.io/) and [conda](https://docs.conda.io/) will also work here.
 
 ### Option 1: Use Tiger Cloud (recommended for beginners)
 
@@ -86,29 +89,151 @@ Follow the installation instructions included with each release for your operati
 
 **Step 2: Update your PostgreSQL configuration**
 
-pg_textsearch needs to be loaded when PostgreSQL starts up. Open your `postgresql.conf` file and add (or update) this line:
+pg_textsearch needs to be loaded when PostgreSQL starts up. This requires a one-time change to your `postgresql.conf` file and a server restart.
+
+**2a. Find your `postgresql.conf` file**
+
+The location depends on how PostgreSQL was installed. Run this in a SQL session (e.g. `psql`) to get the exact path:
+
+```sql
+SHOW config_file;
+```
+
+Common locations by platform:
+
+| Platform | Typical path |
+|---|---|
+| Linux (apt/deb) | `/etc/postgresql/17/main/postgresql.conf` |
+| Linux (yum/rpm) | `/var/lib/pgsql/17/data/postgresql.conf` |
+| macOS (Homebrew) | `/usr/local/var/postgresql@17/postgresql.conf` or `/opt/homebrew/var/postgresql@17/postgresql.conf` |
+| macOS (Postgres.app) | `~/Library/Application Support/Postgres/var-17/postgresql.conf` |
+| macOS (EDB installer) | `/Library/PostgreSQL/17/data/postgresql.conf` |
+| Windows (EDB installer) | `C:\Program Files\PostgreSQL\17\data\postgresql.conf` |
+
+> **Tip:** Replace `17` with `18` in any of the paths above if you're running PostgreSQL 18.
+
+**2b. Edit the file**
+
+Open `postgresql.conf` in a text editor and find the `shared_preload_libraries` line. It may be commented out (starting with `#`):
+
+```
+#shared_preload_libraries = ''    # (change requires restart)
+```
+
+Update it to:
 
 ```
 shared_preload_libraries = 'pg_textsearch'
 ```
 
-> **Where is postgresql.conf?** The location varies by OS. You can find it by running `SHOW config_file;` in a SQL session, or check common locations like `/etc/postgresql/17/main/` (Linux) or `/usr/local/var/postgresql@17/` (macOS with Homebrew).
+If `shared_preload_libraries` already has other extensions listed, add `pg_textsearch` to the comma-separated list:
 
-After saving the file, **restart PostgreSQL** for the change to take effect.
+```
+shared_preload_libraries = 'existing_extension,pg_textsearch'
+```
+
+> **Note:** Editing this file may require elevated permissions. Use `sudo` on Linux/macOS, or run your editor as Administrator on Windows.
+
+**2c. Restart PostgreSQL**
+
+The `shared_preload_libraries` setting only takes effect on server start, so a restart is required (a reload is not enough).
+
+Linux (systemd):
+```bash
+sudo systemctl restart postgresql
+```
+
+macOS (Homebrew):
+```bash
+brew services restart postgresql@17
+```
+
+macOS (EDB installer):
+```bash
+sudo -u postgres /Library/PostgreSQL/17/bin/pg_ctl restart -D /Library/PostgreSQL/17/data
+```
+
+Windows (Command Prompt as Administrator):
+```cmd
+net stop postgresql-x64-17 && net start postgresql-x64-17
+```
+
+**2d. Verify it loaded**
+
+Reconnect to your database and confirm pg_textsearch is in the preloaded libraries:
+
+```sql
+SHOW shared_preload_libraries;
+```
+
+You should see `pg_textsearch` in the output. If it's not there, double-check that you edited the correct `postgresql.conf` (re-run `SHOW config_file;` to confirm) and that you fully restarted (not just reloaded) the server.
 
 **Step 3: Create the extensions in your database**
 
-Connect to your database and run:
+**3a. Connect to your database**
+
+Use `psql` or any SQL client to connect. If you're running PostgreSQL locally with the default settings:
+
+```bash
+psql -h localhost -U postgres
+```
+
+You'll be prompted for the password you set during PostgreSQL installation.
+
+> **Tip:** If you're connecting to a specific database (not the default `postgres` database), add `-d your_database_name` to the command.
+
+**3b. Install the keyword search extension (pg_textsearch)**
 
 ```sql
--- Install keyword search (BM25)
 CREATE EXTENSION pg_textsearch;
+```
 
--- Install vector search (this automatically installs pgvector too)
+You should see:
+
+```
+CREATE EXTENSION
+```
+
+If you get `ERROR: extension "pg_textsearch" is not available` or similar, the extension files weren't installed correctly in Step 1. Double-check that you downloaded the right package for your PostgreSQL version and OS, and that the files are in PostgreSQL's extension directory.
+
+If you get `ERROR: pg_textsearch must be loaded via shared_preload_libraries`, go back to Step 2 and make sure you updated `postgresql.conf` and restarted the server.
+
+**3c. Install the vector search extension (pgvectorscale)**
+
+```sql
 CREATE EXTENSION vectorscale CASCADE;
 ```
 
-You should see `CREATE EXTENSION` printed after each command — that means it worked. You're all set!
+The `CASCADE` keyword automatically installs **pgvector** as a dependency, so you don't need to install it separately. You should see:
+
+```
+NOTICE:  installing required extension "vector"
+CREATE EXTENSION
+```
+
+> **Note:** If pgvector is already installed, the `NOTICE` line won't appear — that's fine.
+
+**3d. Verify both extensions are installed**
+
+Run this query to confirm everything is in place:
+
+```sql
+SELECT extname, extversion FROM pg_extension WHERE extname IN ('pg_textsearch', 'vectorscale', 'vector');
+```
+
+You should see three rows:
+
+```
+   extname     | extversion
+---------------+------------
+ vector        | 0.8.0
+ pg_textsearch | 1.0.0
+ vectorscale   | 0.7.0
+```
+
+(Your version numbers may differ — that's fine as long as all three appear.)
+
+You're all set! Continue to the next section to create the table and load sample data.
 
 ---
 
@@ -174,31 +299,127 @@ INSERT INTO episodes (title, description, pub_date, url) VALUES
    '2025-12-18', 'https://www.relay.fm/conduit/117');
 ```
 
-In a real application, you would also populate the `embedding` column with vectors from an embedding model. See Raja Rao's [pg_textsearch_demo](https://github.com/rajaraodv/pg_textsearch_demo) for a working example with OpenAI embeddings.
+---
+
+## Step 2: Generate Embeddings
+
+An **embedding** is a list of numbers (a vector) that represents the meaning of a piece of text. Texts that are about similar topics end up with similar vectors, which is what lets vector search find semantically related results even when they don't share the same keywords. For example, an episode about "imposter syndrome" and one about "self-doubt at work" would have embeddings that are close together, even though the words are different.
+
+The `embedding` column is currently empty. We'll be using a Python script to generate embeddings for each episode using OpenAI's `text-embedding-3-small` model and write them back to the database.
+
+We'll be using [uv](https://docs.astral.sh/uv/) as a package manager for this, but feel free to use your package manager of choice.
+
+**2a. Install uv (if you don't have it)**
+
+Install uv with:
+
+macOS / Linux:
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+Windows:
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+> **Using a different package manager?** That's fine — substitute the `uv` commands below:
+> - **pip:** `pip install -r requirements.txt`
+> - **conda:** `conda install openai psycopg2-binary python-dotenv`
+
+**2b. Set up your environment**
+
+From the `Hybrid-search/` directory, create a virtual environment and install dependencies:
+
+```bash
+cd Hybrid-search
+uv venv
+source .venv/bin/activate   # On Windows: .venv\Scripts\activate
+uv pip install -r requirements.txt
+```
+
+**2c. Configure your API key**
+
+Copy the example environment file and add your OpenAI API key:
+
+```bash
+cp ../.env.example ../.env
+```
+
+Open the `.env` file and replace the placeholder with your actual key:
+
+```
+OPENAI_API_KEY=your-key-here
+```
+
+> **Where do I get an API key?** Sign up or log in at [platform.openai.com/api-keys](https://platform.openai.com/api-keys) and create a new secret key.
+
+**2d. Run the embedding script**
+
+```bash
+python embed.py
+```
+
+You should see output like:
+
+```
+Found 12 episodes without embeddings.
+Generating embeddings with text-embedding-3-small...
+Updating database...
+Done! Embedded 12 episodes.
+```
+
+The script is idempotent — it only embeds episodes where `embedding IS NULL`, so you can safely re-run it if you add more data later.
+
+**2e. Verify the embeddings**
+
+Back in `psql`, confirm the embeddings were written:
+
+```sql
+SELECT id, title, left(embedding::text, 40) AS embedding_preview
+FROM episodes
+LIMIT 3;
+```
+
+You should see a truncated vector for each row instead of `NULL`.
 
 ---
 
-## Step 2: Create Indexes
+## Step 3: Create Indexes
+
+Now that we have data and embeddings, we need to create indexes so PostgreSQL can search efficiently. Without indexes, every query would scan every row — fine for 12 episodes, but slow for thousands.
+
+We'll create two indexes, one for each search method we're going to use:
+
+**3a. BM25 index for keyword search**
 
 ```sql
--- BM25 index for keyword search
 CREATE INDEX episodes_bm25_idx ON episodes
   USING bm25(description) WITH (text_config = 'english');
+```
 
--- StreamingDiskANN index for vector similarity search
+This creates a pg_textsearch BM25 index on the `description` column. The `text_config = 'english'` setting enables English stemming (so "productivity" also matches "productive") and removes common stopwords like "the" and "is."
+
+**3b. StreamingDiskANN index for vector search**
+
+```sql
 CREATE INDEX episodes_embedding_idx ON episodes
   USING diskann (embedding vector_cosine_ops);
 ```
 
-The `USING bm25` syntax creates a pg_textsearch BM25 index with English stemming and stopword removal.
+This creates a pgvectorscale StreamingDiskANN index on the `embedding` column. Unlike pgvector's built-in HNSW index, DiskANN stores the graph on disk rather than requiring the entire index to fit in RAM — a big advantage when you have a large number of embeddings.
 
-The `USING diskann` syntax creates a pgvectorscale StreamingDiskANN index, which stores the graph on disk rather than requiring the entire index to fit in RAM. This is the key advantage over pgvector's built-in HNSW index for large embedding collections.
+With both indexes in place, we're ready to search.
 
 ---
 
-## Step 3: BM25 Keyword Search
+## Step 4: Try Keyword Search (BM25)
 
-The `<@>` operator returns a negative BM25 score. Scores are negated so that Postgres's default ascending `ORDER BY` returns the most relevant results first (a score of -15.3 is more relevant than -8.2):
+Let's start with keyword search to see how BM25 works on its own. This is the kind of search you're used to — type in some words, get back results that contain those words, ranked by relevance.
+
+pg_textsearch uses the `<@>` operator to score how well a row matches your search terms. Scores are negative so that PostgreSQL's default ascending `ORDER BY` puts the most relevant results first (a score of -15.3 is more relevant than -8.2).
+
+**Basic keyword search** — find episodes that match "burnout productivity":
 
 ```sql
 SELECT title, description <@> 'burnout productivity' AS score
@@ -207,10 +428,11 @@ ORDER BY description <@> 'burnout productivity'
 LIMIT 10;
 ```
 
-You can combine BM25 ranking with standard `WHERE` clauses. The planner detects the `<@>` operator and uses the BM25 index automatically:
+You should see episodes like "The Conduit Burnout Candle" and "Happiness First, Productivity Second" near the top — they contain the words we searched for.
+
+**Keyword search with a date filter** — same idea, but only episodes from 2023 onward. PostgreSQL detects the `<@>` operator and uses the BM25 index automatically, so you can freely combine it with `WHERE` clauses:
 
 ```sql
--- BM25 ranking with a filter
 SELECT title, description <@> 'help' AS score
 FROM episodes
 WHERE pub_date >= '2023-01-01'
@@ -218,27 +440,49 @@ ORDER BY description <@> 'help'
 LIMIT 10;
 ```
 
+**What BM25 is good at:** finding exact keyword matches. If someone searches for "imposter syndrome," BM25 will find it.
+
+**Where it falls short:** if someone searches for "feeling like a fraud at work," BM25 won't match the imposter syndrome episode because none of those exact words appear in its description. That's where vector search comes in.
+
 ---
 
-## Step 4: Vector Similarity Search
+## Step 5: Try Vector Search (Semantic Similarity)
 
-With embeddings populated and the StreamingDiskANN index in place, vector search uses the standard pgvector `<=>` operator for cosine distance:
+Vector search uses the embeddings we generated in Step 2 to find episodes by *meaning* rather than keywords. Two pieces of text that are about the same topic will have similar embeddings, even if they use completely different words.
+
+The `<=>` operator computes cosine distance between two vectors. Unlike BM25 scores, lower values mean more similar (0 = identical, 1 = completely unrelated).
+
+**Semantic search** — find episodes closest in meaning to a query vector. Replace `$1` with an embedding generated from your search text (see the note below):
 
 ```sql
--- $1 is the query embedding vector
 SELECT title, embedding <=> $1 AS distance
 FROM episodes
 ORDER BY embedding <=> $1
 LIMIT 10;
 ```
 
+> **How do I get a query vector?** You'd generate an embedding for your search text the same way we embedded the episodes — by calling the OpenAI embeddings API. The [`embed.py`](./embed.py) script shows how to do this. In a real application, your app would generate the query embedding at search time and pass it as a parameter.
+
+**What vector search is good at:** finding semantically related content. A search for "feeling like a fraud at work" would surface the imposter syndrome episode, even though those exact words don't appear anywhere in its description.
+
+**Where it falls short:** it can miss results that match on specific terms. If someone searches for "episode 100," BM25 finds it instantly, but vector search might rank it lower because "episode 100" doesn't carry strong semantic meaning.
+
+Each method has blind spots — which is exactly why we combine them in the next step.
+
 ---
 
-## Step 5: Hybrid Search with Reciprocal Rank Fusion (RRF)
+## Step 6: Hybrid Search with Reciprocal Rank Fusion (RRF)
 
-Reciprocal Rank Fusion combines results from multiple ranked lists by summing the reciprocal of each result's rank. It is simple, effective, and does not require score normalization:
+This is where everything comes together. In Steps 4 and 5, we ran keyword search and vector search independently. Each one is good at different things — BM25 catches exact word matches, while vector search catches meaning. But what if we want the best of both?
+
+**Reciprocal Rank Fusion (RRF)** is a simple technique for combining ranked results from multiple search methods into a single list. The idea: instead of trying to compare raw scores across different systems (which use different scales), RRF only looks at **rank position**. An episode ranked #1 by either method gets a high score. An episode ranked #1 by *both* methods gets an even higher score. Episodes that only one method found still make it into the final list, just ranked lower.
+
+The formula for each result is `1 / (k + rank)`, where `k` is a smoothing constant (typically 60). You sum this across all the search methods, and sort by the total. That's it — no normalization, no tuning, and it works surprisingly well in practice.
+
+**Hybrid search with RRF** — this query runs both search methods and fuses the results. We'll walk through each part below:
 
 ```sql
+-- Step 1: Get the top 20 BM25 keyword matches
 WITH bm25_results AS (
   SELECT id, ROW_NUMBER() OVER (
     ORDER BY description <@> 'mental health boundaries'
@@ -247,6 +491,7 @@ WITH bm25_results AS (
   ORDER BY description <@> 'mental health boundaries'
   LIMIT 20
 ),
+-- Step 2: Get the top 20 vector similarity matches
 vector_results AS (
   SELECT id, ROW_NUMBER() OVER (
     ORDER BY embedding <=> $1  -- $1 is the query embedding vector
@@ -255,6 +500,7 @@ vector_results AS (
   ORDER BY embedding <=> $1
   LIMIT 20
 )
+-- Step 3: Fuse the two ranked lists using RRF
 SELECT
   d.id,
   d.title,
@@ -268,36 +514,29 @@ ORDER BY rrf_score DESC
 LIMIT 10;
 ```
 
-**How RRF works:**
+**Breaking down what's happening:**
 
-- The constant 60 is the standard smoothing parameter
-- Each subquery retrieves the top 20 results from its respective index (BM25 or vector)
-- Episodes found by both searches get contributions from both ranks, pushing them higher
-- The `COALESCE(..., 0)` handles documents that appear in only one result set
+1. **`bm25_results`** — runs a keyword search for "mental health boundaries" and assigns each result a rank (1 = best match)
+2. **`vector_results`** — runs a vector search using the query embedding and assigns ranks the same way
+3. **The final `SELECT`** — joins both result sets by episode ID and computes an RRF score for each. The `COALESCE(..., 0)` ensures that episodes found by only one method still get a score (just lower). The `60` is the standard smoothing constant that prevents top-ranked results from dominating too heavily.
 
-**Why this works for RAG:** Consider a RAG system searching a podcast archive. A user asks "how do I deal with feeling like a fraud at work?" BM25 finds the episode titled "Eating the Devil's Spaghetti: Combating Imposter Syndrome" because it matches "imposter" after stemming. Vector search finds episodes about burnout, boundaries, and mental health that are semantically related but use different words. RRF fuses both, surfacing the imposter syndrome episode at the top while also ranking related episodes about self-doubt and mental health higher.
+**An example to make it concrete:** Imagine a user searches for "how do I deal with feeling like a fraud at work?"
+
+- **BM25 finds:** "Eating the Devil's Spaghetti: Combating Imposter Syndrome" — it matches on "imposter" after stemming
+- **Vector search finds:** episodes about burnout, boundaries, and mental health — semantically related even though the words are different
+- **RRF fuses both:** the imposter syndrome episode ranks highest (found by both methods), while related episodes about self-doubt and mental health also surface higher than they would with either method alone
+
+That's hybrid search. You get the precision of keywords and the recall of semantic similarity in a single ranked list.
 
 ---
 
-## Production Patterns
+## Going Further
 
-### Parallel index builds for large tables
+The tutorial above covers the core pattern. This section collects tips and techniques for when you're ready to take hybrid search into production.
 
-```sql
-SET max_parallel_maintenance_workers = 4;
-SET maintenance_work_mem = '256MB';  -- minimum 64MB for parallel builds
+### Search across multiple columns
 
-CREATE INDEX ON large_table USING bm25(content)
-  WITH (text_config = 'english');
-
--- pgvectorscale also supports parallel DiskANN builds
-CREATE INDEX ON large_table
-  USING diskann (embedding vector_cosine_ops);
-```
-
-### Indexing multiple columns
-
-Each BM25 index covers a single text column. To search across multiple columns, create a generated column:
+Each BM25 index covers a single text column. To search across both title and description, create a generated column that combines them:
 
 ```sql
 ALTER TABLE episodes ADD COLUMN search_text text
@@ -307,23 +546,11 @@ CREATE INDEX ON episodes USING bm25(search_text)
   WITH (text_config = 'english');
 ```
 
-### Phrase search workaround
+Now queries against `search_text` will match words in either the title or description.
 
-pg_textsearch does not support native phrase queries in 1.0. Use a BM25 over-fetch with a post-filter:
+### Highlight matched terms in results
 
-```sql
-SELECT * FROM (
-  SELECT * FROM episodes
-  ORDER BY description <@> 'year end planning'
-  LIMIT 100  -- over-fetch to compensate for post-filter
-) sub
-WHERE description ILIKE '%end-of-year%'
-LIMIT 10;
-```
-
-### Highlighting matched terms
-
-Use Postgres's built-in `ts_headline()` for snippet generation:
+Use PostgreSQL's built-in `ts_headline()` to show which words matched, with surrounding context. This is useful for building search result snippets in a UI:
 
 ```sql
 SELECT title,
@@ -334,22 +561,11 @@ ORDER BY description <@> 'productivity'
 LIMIT 10;
 ```
 
-### Tuning pgvectorscale accuracy
+This returns the description with matching terms wrapped in `<b>` tags (configurable).
 
-pgvectorscale's StreamingDiskANN index uses smart defaults. To fine-tune accuracy vs. speed at query time:
+### Filter out low-relevance results
 
-```sql
--- Higher values = more accurate, slightly slower
-SET LOCAL diskann.query_rescore = 150;
-
-SELECT * FROM episodes
-ORDER BY embedding <=> $1
-LIMIT 10;
-```
-
-### Minimum relevance threshold
-
-Filter out low-relevance BM25 results:
+By default, BM25 returns a ranked list regardless of how weak the match is. Use `to_bm25query()` with a threshold to discard results below a minimum relevance score:
 
 ```sql
 SELECT title, description <@> to_bm25query('burnout', 'episodes_bm25_idx') AS score
@@ -359,13 +575,62 @@ ORDER BY description <@> to_bm25query('burnout', 'episodes_bm25_idx')
 LIMIT 10;
 ```
 
-### Compaction after bulk inserts
+This only returns episodes with a BM25 score below -1.0 (remember, more negative = more relevant).
 
-Sustained incremental inserts create multiple BM25 segments from repeated memtable spills. Consolidate for optimal query performance:
+### Phrase search workaround
+
+pg_textsearch 1.0 doesn't support native phrase queries (matching exact multi-word sequences). You can work around this by over-fetching from the BM25 index and then post-filtering with `ILIKE`:
+
+```sql
+SELECT * FROM (
+  SELECT * FROM episodes
+  ORDER BY description <@> 'year end planning'
+  LIMIT 100  -- over-fetch to compensate for the post-filter
+) sub
+WHERE description ILIKE '%end-of-year%'
+LIMIT 10;
+```
+
+The inner query uses BM25 to find the top 100 candidates, and the outer query filters down to rows containing the exact phrase.
+
+### Tune vector search accuracy
+
+pgvectorscale's StreamingDiskANN index uses smart defaults. If you need higher accuracy (at the cost of slightly slower queries), increase the rescore parameter:
+
+```sql
+SET LOCAL diskann.query_rescore = 150;
+
+SELECT * FROM episodes
+ORDER BY embedding <=> $1
+LIMIT 10;
+```
+
+Higher values mean more candidates are re-scored for accuracy. The default works well for most cases.
+
+### Speed up index builds for large tables
+
+For tables with millions of rows, use parallel index builds to speed things up:
+
+```sql
+SET max_parallel_maintenance_workers = 4;
+SET maintenance_work_mem = '256MB';  -- minimum 64MB for parallel builds
+
+CREATE INDEX ON large_table USING bm25(content)
+  WITH (text_config = 'english');
+
+CREATE INDEX ON large_table
+  USING diskann (embedding vector_cosine_ops);
+```
+
+### Compact the BM25 index after bulk inserts
+
+If you bulk-insert a lot of data, the BM25 index may have multiple segments from repeated writes. Merge them for faster queries:
 
 ```sql
 SELECT bm25_force_merge('episodes_bm25_idx');
 ```
+
+This is a one-time operation — you don't need to run it after every insert, just after large bulk loads.
 
 ---
 
@@ -375,7 +640,7 @@ Things to be aware of in pg_textsearch 1.0:
 
 - **No phrase queries**: The index stores term frequencies but not positions. Use the over-fetch + post-filter pattern shown above.
 - **OR-only query semantics**: All query terms are implicitly OR'd. AND/OR/NOT operators are planned for a post-1.0 release.
-- **No highlighting**: Use Postgres's `ts_headline()` on the result set.
+- **No highlighting from the index**: Use PostgreSQL's built-in `ts_headline()` on the result set.
 - **Single column per index**: Use a generated column to combine multiple fields.
 - **PL/pgSQL requires explicit index names**: Use `to_bm25query('query', 'index_name')` inside PL/pgSQL, DO blocks, or stored procedures.
 - **shared_preload_libraries required**: Requires a server restart for self-hosted installations. Handled automatically on Tiger Cloud.
@@ -384,7 +649,14 @@ Things to be aware of in pg_textsearch 1.0:
 
 ## What's Next
 
-pg_textsearch 1.0 is the foundation. Boolean query operators (AND, OR, NOT), background compaction, and expression index support are planned for upcoming releases.
+You've built a working hybrid search system from scratch. Here are some directions to explore from here:
+
+- **Load the full dataset** — The [conduit-transcripts](https://github.com/kjaymiller/conduit-transcripts) repo has 119 episodes. Try loading all of them with their full transcript text (not just descriptions) and see how hybrid search performs at a larger scale.
+- **Build a search API** — Wrap the hybrid search query in a small Python or Node.js API that generates the query embedding on the fly and returns ranked results as JSON.
+- **Try different embedding models** — We used OpenAI's `text-embedding-3-small` (1536 dimensions). Experiment with `text-embedding-3-large` (3072 dimensions) or open-source models like [nomic-embed-text](https://huggingface.co/nomic-ai/nomic-embed-text-v1.5) via [Ollama](https://ollama.com/) for a fully local setup.
+- **Add a reranker** — RRF is a great starting point, but you can improve result quality further by adding a cross-encoder reranker (e.g., [Cohere Rerank](https://cohere.com/rerank) or an open-source model) as a final pass over the top results.
+- **Plug it into a RAG pipeline** — Use the hybrid search results as context for an LLM. Feed the top-ranked episode descriptions (or full transcripts) into a model like Claude to answer natural language questions about the podcast.
+- **Explore the pg_textsearch_demo** — Raja Rao's [pg_textsearch_demo](https://github.com/rajaraodv/pg_textsearch_demo) is a full working app with a web UI that demonstrates hybrid search end to end.
 
 ## Resources
 
