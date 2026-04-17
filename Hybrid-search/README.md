@@ -659,20 +659,6 @@ LIMIT 10;
 
 This returns the description with matching terms wrapped in `<b>` tags (configurable).
 
-### Filter out low-relevance results
-
-By default, BM25 returns a ranked list regardless of how weak the match is. Use `to_bm25query()` with a threshold to discard results below a minimum relevance score:
-
-```sql
-SELECT title, description <@> to_bm25query('burnout', 'episodes_bm25_idx') AS score
-FROM episodes
-WHERE description <@> to_bm25query('burnout', 'episodes_bm25_idx') < -1.0
-ORDER BY description <@> to_bm25query('burnout', 'episodes_bm25_idx')
-LIMIT 10;
-```
-
-This only returns episodes with a BM25 score below -1.0 (remember, more negative = more relevant).
-
 ### Phrase search workaround
 
 pg_textsearch 1.0 doesn't support native phrase queries (matching exact multi-word sequences). You can work around this by over-fetching from the BM25 index and then post-filtering with `ILIKE`:
@@ -739,7 +725,8 @@ Things to be aware of in pg_textsearch 1.0:
 - **No highlighting from the index**: Use PostgreSQL's built-in `ts_headline()` on the result set.
 - **Single column per index**: Use a generated column to combine multiple fields.
 - **PL/pgSQL requires explicit index names**: Use `to_bm25query('query', 'index_name')` inside PL/pgSQL, DO blocks, or stored procedures.
-- **shared_preload_libraries required**: Requires a server restart for self-hosted installations. Handled automatically on Tiger Cloud.
+
+> **Note:** pg_textsearch also requires a one-time `shared_preload_libraries` setting and server restart on self-hosted PostgreSQL. This is a permanent architectural requirement (not a limitation), and it's handled automatically on Tiger Cloud and in the Docker image — see Option 3 above if you're running PostgreSQL yourself.
 
 ---
 
