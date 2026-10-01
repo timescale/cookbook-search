@@ -1,0 +1,17 @@
+{
+ "global": [
+  {
+   "question": "incidents caused by a deployment",
+   "query_kind": "temporal",
+   "rule": "deploy_trigger",
+   "notes": "Any incident whose family trigger is 'deploy'. Join events.metadata->>'deploy_id' to deployments."
+  },
+  {
+   "question": "what has broken checkout",
+   "query_kind": "semantic",
+   "rule": "service:checkout-api",
+   "notes": "Any family listing checkout-api among affected services."
+  }
+ ],
+ "notes_template": "Relevant rows carry incident_family=<<family>> (events via metadata, documents and issues via column)."
+}

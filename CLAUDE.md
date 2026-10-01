@@ -19,6 +19,8 @@ cookbook-search/
 └── State-of-Search/          # Multi-method demo and presentation
     ├── README.md             # Setup, operation, and verification guide
     ├── app/                  # Preparation, search, UI, and evaluation code
+    ├── generator/            # Deterministic corpus generation helpers
+    ├── seed/                 # Versioned generator inputs
     ├── sql/                  # Schema and index definitions
     ├── slides/               # Reveal.js presentation
     ├── compose.yaml          # PostgreSQL, app, and optional Elasticsearch

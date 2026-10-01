@@ -1,0 +1,818 @@
+{
+ "strategies": {
+  "rolling": 2663,
+  "canary": 1757,
+  "blue-green": 487
+ },
+ "statuses": {
+  "succeeded": 4728,
+  "rolled_back": 141,
+  "failed": 38
+ },
+ "environments": {
+  "production": 3434,
+  "staging": 1473
+ },
+ "duration_seconds": [
+  90,
+  1500
+ ],
+ "hour_weights": [
+  16,
+  17,
+  28,
+  21,
+  19,
+  27,
+  12,
+  29,
+  25,
+  23,
+  18,
+  28,
+  21,
+  17,
+  578,
+  569,
+  606,
+  532,
+  556,
+  589,
+  578,
+  556,
+  22,
+  20
+ ],
+ "weekday_weights": [
+  967,
+  929,
+  956,
+  951,
+  959,
+  71,
+  74
+ ],
+ "change_summaries": [
+  [
+   "Return 422 instead of 400 for semantic validation errors",
+   197
+  ],
+  [
+   "Remove deprecated v0 endpoints",
+   196
+  ],
+  [
+   "Add structured logging fields for trace and span ids",
+   191
+  ],
+  [
+   "Localize error messages for de-DE and fr-FR",
+   191
+  ],
+  [
+   "Increase default page size for list endpoints to 50",
+   191
+  ],
+  [
+   "Add p99 latency histogram buckets to metrics",
+   183
+  ],
+  [
+   "Fix off-by-one in pagination cursor encoding",
+   178
+  ],
+  [
+   "Refactor handler middleware chain, no behavior change",
+   176
+  ],
+  [
+   "Upgrade OpenTelemetry SDK to latest minor",
+   175
+  ],
+  [
+   "Reduce connection pool idle timeout to 5m",
+   168
+  ],
+  [
+   "Add rate limit headers to responses",
+   159
+  ],
+  [
+   "Add graceful shutdown drain with 30s timeout",
+   120
+  ],
+  [
+   "Retry transient DB errors with jittered backoff",
+   104
+  ],
+  [
+   "Increase consumer concurrency from 4 to 8",
+   94
+  ],
+  [
+   "Add WAF rule for known scanner user agents",
+   91
+  ],
+  [
+   "Upgrade Kafka client library",
+   89
+  ],
+  [
+   "Add idempotency key check before processing",
+   89
+  ],
+  [
+   "Emit lag metric per partition",
+   84
+  ],
+  [
+   "Add per-tenant rate limit buckets",
+   81
+  ],
+  [
+   "Increase upstream timeout for search-api to 5s",
+   80
+  ],
+  [
+   "Update routing rules for /v2 catalog endpoints",
+   79
+  ],
+  [
+   "Cache postgres responses for 30s to reduce load",
+   76
+  ],
+  [
+   "Upgrade envoy to latest stable",
+   74
+  ],
+  [
+   "Enable pg_stat_statements",
+   74
+  ],
+  [
+   "Enable HTTP/3 on edge listeners",
+   73
+  ],
+  [
+   "Bump Go base image and rebuild",
+   71
+  ],
+  [
+   "Add canary weight support to route config",
+   71
+  ],
+  [
+   "Rotate edge TLS certificate",
+   69
+  ],
+  [
+   "Increase shared_buffers to 25% of memory",
+   69
+  ],
+  [
+   "Tune HPA target CPU from 70% to 60%",
+   68
+  ],
+  [
+   "Adjust redis maxmemory-policy to allkeys-lru",
+   61
+  ],
+  [
+   "Add readiness gate on postgres connectivity",
+   59
+  ],
+  [
+   "Apply weekly minor version patch",
+   53
+  ],
+  [
+   "Rotate replication credentials",
+   51
+  ],
+  [
+   "Add readiness gate on redis-cache connectivity",
+   48
+  ],
+  [
+   "Bump Node.js base image and rebuild",
+   47
+  ],
+  [
+   "Cache redis-cache responses for 30s to reduce load",
+   43
+  ],
+  [
+   "Tighten request validation on /healthz",
+   33
+  ],
+  [
+   "Bump Python base image and rebuild",
+   32
+  ],
+  [
+   "Bump Java base image and rebuild",
+   26
+  ],
+  [
+   "Increase kafka retention for notifications.email to 7d",
+   17
+  ],
+  [
+   "Cache catalog-api responses for 30s to reduce load",
+   16
+  ],
+  [
+   "Add readiness gate on catalog-api connectivity",
+   16
+  ],
+  [
+   "Add readiness gate on kafka connectivity",
+   15
+  ],
+  [
+   "Increase kafka retention for orders.created to 7d",
+   14
+  ],
+  [
+   "Fix memory growth in backorder-release by clearing per-batch cache",
+   13
+  ],
+  [
+   "Add dead-letter queue handling for catalog.product-updated",
+   12
+  ],
+  [
+   "Add dead-letter queue handling for orders.updated",
+   12
+  ],
+  [
+   "Add dead-letter queue handling for search.reindex",
+   11
+  ],
+  [
+   "Increase kafka retention for inventory.reserved to 7d",
+   11
+  ],
+  [
+   "Batch writes to orders in groups of 500",
+   11
+  ],
+  [
+   "Cache user-profile responses for 30s to reduce load",
+   11
+  ],
+  [
+   "Move order-status-sync schedule from hourly to every 15 minutes",
+   10
+  ],
+  [
+   "Tighten request validation on /v2/products/<<n>>/variants",
+   10
+  ],
+  [
+   "Increase kafka retention for orders.updated to 7d",
+   10
+  ],
+  [
+   "Increase kafka retention for payments.captured to 7d",
+   10
+  ],
+  [
+   "Add readiness gate on user-profile connectivity",
+   10
+  ],
+  [
+   "Batch writes to order_items in groups of 500",
+   10
+  ],
+  [
+   "Add dead-letter queue handling for payments.captured",
+   9
+  ],
+  [
+   "Cache cart-service responses for 30s to reduce load",
+   9
+  ],
+  [
+   "Fix memory growth in digest-builder by clearing per-batch cache",
+   9
+  ],
+  [
+   "Tune autovacuum settings for orders",
+   9
+  ],
+  [
+   "Fix memory growth in order-fulfillment by clearing per-batch cache",
+   9
+  ],
+  [
+   "Tighten request validation on /v1/recommendations/trending",
+   9
+  ],
+  [
+   "Batch writes to users in groups of 500",
+   9
+  ],
+  [
+   "Batch writes to price_history in groups of 500",
+   9
+  ],
+  [
+   "Tighten request validation on /v1/checkout",
+   9
+  ],
+  [
+   "Increase kafka retention for catalog.product-updated to 7d",
+   9
+  ],
+  [
+   "Add dead-letter queue handling for notifications.email",
+   8
+  ],
+  [
+   "Cache kafka responses for 30s to reduce load",
+   8
+  ],
+  [
+   "Fix memory growth in order-status-sync by clearing per-batch cache",
+   8
+  ],
+  [
+   "Increase kafka retention for search.reindex to 7d",
+   8
+  ],
+  [
+   "Add dead-letter queue handling for cart.abandoned",
+   8
+  ],
+  [
+   "Batch writes to sessions in groups of 500",
+   8
+  ],
+  [
+   "Tighten request validation on /v1/search/suggest",
+   8
+  ],
+  [
+   "Add readiness gate on auth-service connectivity",
+   8
+  ],
+  [
+   "Tighten request validation on /v1/cart/<<n>>/merge",
+   7
+  ],
+  [
+   "Tighten request validation on /v1/checkout/<<n>>/tax",
+   7
+  ],
+  [
+   "Batch writes to inventory_levels in groups of 500",
+   7
+  ],
+  [
+   "Batch writes to carts in groups of 500",
+   7
+  ],
+  [
+   "Tighten request validation on /v1/cart/<<n>>/coupon",
+   7
+  ],
+  [
+   "Increase kafka retention for cart.abandoned to 7d",
+   7
+  ],
+  [
+   "Add index on cart_items(created_at)",
+   7
+  ],
+  [
+   "Add readiness gate on payment-processor connectivity",
+   7
+  ],
+  [
+   "Fix memory growth in resize-product-images by clearing per-batch cache",
+   7
+  ],
+  [
+   "Cache image-resizer responses for 30s to reduce load",
+   7
+  ],
+  [
+   "Add index on users(created_at)",
+   7
+  ],
+  [
+   "Add index on orders(created_at)",
+   7
+  ],
+  [
+   "Add dead-letter queue handling for orders.created",
+   7
+  ],
+  [
+   "Add dead-letter queue handling for inventory.reserved",
+   7
+  ],
+  [
+   "Tune autovacuum settings for products",
+   7
+  ],
+  [
+   "Tighten request validation on /v2/categories/<<n>>",
+   7
+  ],
+  [
+   "Fix memory growth in purge-orphan-renditions by clearing per-batch cache",
+   7
+  ],
+  [
+   "Move email-dispatch schedule from hourly to every 15 minutes",
+   7
+  ],
+  [
+   "Tune autovacuum settings for cart_items",
+   6
+  ],
+  [
+   "Add readiness gate on payments connectivity",
+   6
+  ],
+  [
+   "Add readiness gate on inventory connectivity",
+   6
+  ],
+  [
+   "Tune autovacuum settings for order_items",
+   6
+  ],
+  [
+   "Tighten request validation on /v1/checkout/<<n>>/shipping",
+   6
+  ],
+  [
+   "Tune autovacuum settings for payment_attempts",
+   6
+  ],
+  [
+   "Cache auth-service responses for 30s to reduce load",
+   6
+  ],
+  [
+   "Tighten request validation on /v1/sessions",
+   6
+  ],
+  [
+   "Fix memory growth in refund-sweep by clearing per-batch cache",
+   6
+  ],
+  [
+   "Fix memory growth in embed-product-batch by clearing per-batch cache",
+   6
+  ],
+  [
+   "Add index on addresses(created_at)",
+   6
+  ],
+  [
+   "Move digest-builder schedule from hourly to every 15 minutes",
+   6
+  ],
+  [
+   "Batch writes to payments in groups of 500",
+   6
+  ],
+  [
+   "Batch writes to product_variants in groups of 500",
+   6
+  ],
+  [
+   "Add index on products(created_at)",
+   6
+  ],
+  [
+   "Add index on product_variants(created_at)",
+   6
+  ],
+  [
+   "Batch writes to products in groups of 500",
+   6
+  ],
+  [
+   "Tighten request validation on /v2/products/<<n>>",
+   6
+  ],
+  [
+   "Move sms-dispatch schedule from hourly to every 15 minutes",
+   6
+  ],
+  [
+   "Fix memory growth in refresh-similar-items by clearing per-batch cache",
+   5
+  ],
+  [
+   "Fix memory growth in email-dispatch by clearing per-batch cache",
+   5
+  ],
+  [
+   "Move order-fulfillment schedule from hourly to every 15 minutes",
+   5
+  ],
+  [
+   "Move refund-sweep schedule from hourly to every 15 minutes",
+   5
+  ],
+  [
+   "Move settlement-reconcile schedule from hourly to every 15 minutes",
+   5
+  ],
+  [
+   "Tighten request validation on /v1/users/<<n>>/preferences",
+   5
+  ],
+  [
+   "Move resize-product-images schedule from hourly to every 15 minutes",
+   5
+  ],
+  [
+   "Cache billing responses for 30s to reduce load",
+   5
+  ],
+  [
+   "Move embed-product-batch schedule from hourly to every 15 minutes",
+   5
+  ],
+  [
+   "Batch writes to cart_items in groups of 500",
+   5
+  ],
+  [
+   "Tighten request validation on /oauth/introspect",
+   5
+  ],
+  [
+   "Fix memory growth in invoice-generation by clearing per-batch cache",
+   5
+  ],
+  [
+   "Add index on price_history(created_at)",
+   5
+  ],
+  [
+   "Tighten request validation on /v1/checkout/<<n>>/confirm",
+   5
+  ],
+  [
+   "Tighten request validation on /v1/search/facets",
+   5
+  ],
+  [
+   "Cache embedding-worker responses for 30s to reduce load",
+   5
+  ],
+  [
+   "Batch writes to payment_attempts in groups of 500",
+   5
+  ],
+  [
+   "Tighten request validation on /v1/recommendations/<<n>>",
+   4
+  ],
+  [
+   "Tune autovacuum settings for carts",
+   4
+  ],
+  [
+   "Batch writes to addresses in groups of 500",
+   4
+  ],
+  [
+   "Tune autovacuum settings for inventory_levels",
+   4
+  ],
+  [
+   "Cache payment-processor responses for 30s to reduce load",
+   4
+  ],
+  [
+   "Add readiness gate on cart-service connectivity",
+   4
+  ],
+  [
+   "Fix memory growth in price-history-rollup by clearing per-batch cache",
+   4
+  ],
+  [
+   "Batch writes to notifications_outbox in groups of 500",
+   4
+  ],
+  [
+   "Tighten request validation on /v1/cart/<<n>>/items",
+   4
+  ],
+  [
+   "Tighten request validation on /v1/users/<<n>>/addresses",
+   4
+  ],
+  [
+   "Add index on payment_attempts(created_at)",
+   4
+  ],
+  [
+   "Tune autovacuum settings for notifications_outbox",
+   4
+  ],
+  [
+   "Tune autovacuum settings for payments",
+   4
+  ],
+  [
+   "Tighten request validation on /v1/sessions/<<n>>",
+   4
+  ],
+  [
+   "Tighten request validation on /v1/cart/<<n>>",
+   4
+  ],
+  [
+   "Move backorder-release schedule from hourly to every 15 minutes",
+   4
+  ],
+  [
+   "Move purge-orphan-renditions schedule from hourly to every 15 minutes",
+   4
+  ],
+  [
+   "Tighten request validation on /v2/products",
+   4
+  ],
+  [
+   "Fix memory growth in settlement-reconcile by clearing per-batch cache",
+   4
+  ],
+  [
+   "Fix memory growth in embed-query-log by clearing per-batch cache",
+   4
+  ],
+  [
+   "Tighten request validation on /v1/payments/capture",
+   4
+  ],
+  [
+   "Tighten request validation on /v1/search",
+   3
+  ],
+  [
+   "Fix memory growth in sms-dispatch by clearing per-batch cache",
+   3
+  ],
+  [
+   "Tighten request validation on /v1/inventory/bulk",
+   3
+  ],
+  [
+   "Add index on order_items(created_at)",
+   3
+  ],
+  [
+   "Tighten request validation on /v1/recommendations/similar/<<n>>",
+   3
+  ],
+  [
+   "Add index on sessions(created_at)",
+   3
+  ],
+  [
+   "Tune autovacuum settings for users",
+   3
+  ],
+  [
+   "Tune autovacuum settings for price_history",
+   3
+  ],
+  [
+   "Move embed-query-log schedule from hourly to every 15 minutes",
+   3
+  ],
+  [
+   "Cache payments responses for 30s to reduce load",
+   3
+  ],
+  [
+   "Tighten request validation on /v1/inventory/reserve",
+   3
+  ],
+  [
+   "Add readiness gate on embedding-worker connectivity",
+   3
+  ],
+  [
+   "Add readiness gate on billing connectivity",
+   3
+  ],
+  [
+   "Tighten request validation on /v1/payments/authorize",
+   3
+  ],
+  [
+   "Tighten request validation on /.well-known/jwks.json",
+   3
+  ],
+  [
+   "Batch writes to audit_log in groups of 500",
+   3
+  ],
+  [
+   "Add readiness gate on image-resizer connectivity",
+   2
+  ],
+  [
+   "Tighten request validation on /v1/payments/<<n>>/refund",
+   2
+  ],
+  [
+   "Fix memory growth in inventory-reconcile by clearing per-batch cache",
+   2
+  ],
+  [
+   "Add index on inventory_levels(created_at)",
+   2
+  ],
+  [
+   "Tune autovacuum settings for audit_log",
+   2
+  ],
+  [
+   "Tighten request validation on /v1/users/<<n>>",
+   2
+  ],
+  [
+   "Add index on notifications_outbox(created_at)",
+   2
+  ],
+  [
+   "Add index on carts(created_at)",
+   2
+  ],
+  [
+   "Add index on payments(created_at)",
+   2
+  ],
+  [
+   "Move refresh-similar-items schedule from hourly to every 15 minutes",
+   2
+  ],
+  [
+   "Move invoice-generation schedule from hourly to every 15 minutes",
+   2
+  ],
+  [
+   "Cache inventory responses for 30s to reduce load",
+   2
+  ],
+  [
+   "Tune autovacuum settings for sessions",
+   2
+  ],
+  [
+   "Move price-history-rollup schedule from hourly to every 15 minutes",
+   1
+  ],
+  [
+   "Tighten request validation on /v1/inventory/release",
+   1
+  ],
+  [
+   "Tune autovacuum settings for product_variants",
+   1
+  ],
+  [
+   "Add index on audit_log(created_at)",
+   1
+  ],
+  [
+   "Fix memory growth in session-cleanup by clearing per-batch cache",
+   1
+  ],
+  [
+   "Tune autovacuum settings for addresses",
+   1
+  ],
+  [
+   "Tighten request validation on /oauth/token",
+   1
+  ],
+  [
+   "Move abandoned-cart-sweep schedule from hourly to every 15 minutes",
+   1
+  ],
+  [
+   "Move session-cleanup schedule from hourly to every 15 minutes",
+   1
+  ],
+  [
+   "Tighten request validation on /v1/payments/<<n>>",
+   1
+  ]
+ ],
+ "pipeline": "github-actions"
+}

@@ -1,0 +1,220 @@
+{
+ "services": {
+  "api-gateway": {
+   "team": "platform-infra",
+   "major": 4,
+   "event_weight": 18006,
+   "deploy_weight": 415,
+   "repo": "tigerlily/api-gateway"
+  },
+  "auth-service": {
+   "team": "identity",
+   "major": 1,
+   "event_weight": 13405,
+   "deploy_weight": 277,
+   "repo": "tigerlily/auth-service"
+  },
+  "billing": {
+   "team": "payments-platform",
+   "major": 2,
+   "event_weight": 6872,
+   "deploy_weight": 120,
+   "repo": "tigerlily/billing"
+  },
+  "cart-service": {
+   "team": "storefront",
+   "major": 1,
+   "event_weight": 18167,
+   "deploy_weight": 352,
+   "repo": "tigerlily/cart-service"
+  },
+  "catalog-api": {
+   "team": "storefront",
+   "major": 1,
+   "event_weight": 20133,
+   "deploy_weight": 430,
+   "repo": "tigerlily/catalog-api"
+  },
+  "checkout-api": {
+   "team": "payments-platform",
+   "major": 3,
+   "event_weight": 20429,
+   "deploy_weight": 424,
+   "repo": "tigerlily/checkout-api"
+  },
+  "edge-proxy": {
+   "team": "platform-infra",
+   "major": 2,
+   "event_weight": 13513,
+   "deploy_weight": 271,
+   "repo": "tigerlily/edge-proxy"
+  },
+  "embedding-worker": {
+   "team": "discovery",
+   "major": 3,
+   "event_weight": 6775,
+   "deploy_weight": 141,
+   "repo": null
+  },
+  "image-resizer": {
+   "team": "storefront",
+   "major": 4,
+   "event_weight": 6730,
+   "deploy_weight": 135,
+   "repo": "tigerlily/image-resizer"
+  },
+  "inventory": {
+   "team": "fulfillment",
+   "major": 3,
+   "event_weight": 11293,
+   "deploy_weight": 210,
+   "repo": "tigerlily/inventory"
+  },
+  "kafka": {
+   "team": "data-infra",
+   "major": 2,
+   "event_weight": 6695,
+   "deploy_weight": 160,
+   "repo": "tigerlily/db-ops"
+  },
+  "notifications": {
+   "team": "growth",
+   "major": 4,
+   "event_weight": 8892,
+   "deploy_weight": 183,
+   "repo": "tigerlily/notifications"
+  },
+  "order-service": {
+   "team": "fulfillment",
+   "major": 1,
+   "event_weight": 13392,
+   "deploy_weight": 276,
+   "repo": "tigerlily/order-service"
+  },
+  "payments": {
+   "team": "payments-platform",
+   "major": 1,
+   "event_weight": 15518,
+   "deploy_weight": 339,
+   "repo": "tigerlily/payments"
+  },
+  "postgres": {
+   "team": "data-infra",
+   "major": 5,
+   "event_weight": 10934,
+   "deploy_weight": 214,
+   "repo": "tigerlily/db-ops"
+  },
+  "recommendations": {
+   "team": "discovery",
+   "major": 3,
+   "event_weight": 8795,
+   "deploy_weight": 188,
+   "repo": "tigerlily/recommendations"
+  },
+  "redis-cache": {
+   "team": "data-infra",
+   "major": 2,
+   "event_weight": 6794,
+   "deploy_weight": 145,
+   "repo": "tigerlily/db-ops"
+  },
+  "scheduler": {
+   "team": "platform-infra",
+   "major": 3,
+   "event_weight": 4348,
+   "deploy_weight": 80,
+   "repo": "tigerlily/scheduler"
+  },
+  "search-api": {
+   "team": "discovery",
+   "major": 2,
+   "event_weight": 16168,
+   "deploy_weight": 344,
+   "repo": "tigerlily/search-api"
+  },
+  "user-profile": {
+   "team": "identity",
+   "major": 1,
+   "event_weight": 9141,
+   "deploy_weight": 203,
+   "repo": "tigerlily/user-profile"
+  }
+ },
+ "people": {
+  "priya.raman": "storefront",
+  "yuki.nakamura": "platform-infra",
+  "kwame.mensah": "payments-platform",
+  "arjun.patel": "discovery",
+  "diego.fernandez": "payments-platform",
+  "nia.johnson": "growth",
+  "hannah.weiss": "identity",
+  "tomasz.kowalski": "platform-infra",
+  "jonas.lindqvist": "discovery",
+  "omar.haddad": "identity",
+  "daniel.kim": "data-infra",
+  "sofia.andersson": "discovery",
+  "amara.okafor": "payments-platform",
+  "ingrid.olsen": "platform-infra",
+  "chloe.dubois": "storefront",
+  "rafael.souza": "fulfillment",
+  "fatima.alrashid": "data-infra",
+  "lucia.moretti": "storefront",
+  "mei.tanaka": "fulfillment",
+  "samuel.adeyemi": "growth"
+ },
+ "regions": [
+  "us-east-1",
+  "us-west-2",
+  "eu-central-1",
+  "ap-southeast-1"
+ ],
+ "vocab": {
+  "table": [
+   "addresses",
+   "audit_log",
+   "cart_items",
+   "carts",
+   "inventory_levels",
+   "notifications_outbox",
+   "order_items",
+   "orders",
+   "payment_attempts",
+   "price_history",
+   "product_variants",
+   "products",
+   "sessions",
+   "users"
+  ],
+  "topic": [
+   "cart.abandoned",
+   "catalog.product-updated",
+   "inventory.reserved",
+   "notifications.email",
+   "orders.created",
+   "orders.updated",
+   "payments.captured",
+   "search.reindex"
+  ],
+  "job": [
+   "abandoned-cart-sweep",
+   "backorder-release",
+   "digest-builder",
+   "email-dispatch",
+   "embed-product-batch",
+   "embed-query-log",
+   "inventory-reconcile",
+   "invoice-generation",
+   "order-fulfillment",
+   "order-status-sync",
+   "price-history-rollup",
+   "purge-orphan-renditions",
+   "refresh-similar-items",
+   "refund-sweep",
+   "resize-product-images",
+   "session-cleanup",
+   "settlement-reconcile",
+   "sms-dispatch"
+  ]
+ }
+}

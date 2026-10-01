@@ -29,13 +29,8 @@ incident corpus, run a Streamlit demo, or present the accompanying Reveal.js
 deck. It includes Docker Compose services, data preparation and evaluation
 commands, SQL indexes, a terminal demo, a web interface, and speaker material.
 
-Start with the [State of Search guide](./State-of-Search/README.md).
-
-> **Integration note:** The State of Search image currently imports its
-> deterministic data generator from an `Incident-search/` directory at the
-> repository root. That companion source is not included in this checkout, so
-> add it before running the State of Search Docker build. The presentation can
-> still be installed and built independently.
+Start with the [State of Search guide](./State-of-Search/README.md). The project
+is self-contained, including its deterministic data generator and seed files.
 
 ## Requirements
 

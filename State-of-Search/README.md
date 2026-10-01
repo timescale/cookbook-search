@@ -17,14 +17,9 @@ This demo compares:
 - Elasticsearch BM25, kNN, and hybrid RRF as the dedicated-search-engine comparison.
 
 The data is a synthetic incident memory for a fictional ecommerce platform. It
-is generated deterministically from the companion `Incident-search` generator
-and its committed seeds. No source CSV is edited by hand.
-
-> **Before running the Docker demo:** `Dockerfile.app` expects the companion
-> generator at `../Incident-search/` relative to this directory. That directory
-> must contain `generate_data.py`, `generator/`, and `seed/`. It is not included
-> in the current cookbook checkout. Without it, the image build stops at the
-> generator `COPY` step. The Reveal.js presentation does not require it.
+is generated deterministically by the included `generate_data.py` entrypoint,
+`generator/` package, and committed `seed/` files. No source CSV is edited by
+hand.
 
 ## The story
 
@@ -85,6 +80,9 @@ not included in this repository.
 | `compose.yaml` | TimescaleDB/PostgreSQL, demo app, preparation job, and optional Elasticsearch. |
 | `Dockerfile.db` | Selects the PostgreSQL 18 TimescaleDB image used by the demo. |
 | `Dockerfile.app` | Packages the generator, loaders, embedding client, CLI, evaluator, and UI. |
+| `generate_data.py` | Deterministic synthetic incident-corpus generator. |
+| `generator/` | Generator helpers for services, incident families, and documents. |
+| `seed/` | Versioned source material used by the deterministic generator. |
 | `sql/` | Schema, relational/text/vector indexes, and reset script. |
 | `app/prepare.py` | Generate, load, embed, index, verify, and optionally copy data to Elasticsearch. |
 | `app/demo.py` | Reliable terminal-first live demo. |
@@ -103,8 +101,6 @@ not included in this repository.
 - An OpenAI API key for semantic-search preparation and uncached query vectors.
 - About 4 GB of Docker memory for the PostgreSQL-only sample; use at least 6 GB
   when adding Elasticsearch.
-- The companion `Incident-search` generator source described above for the
-  Docker data-preparation workflow.
 
 The demo uses OpenAI `text-embedding-3-small` at its default 1,536 dimensions.
 The same `vector(1536)` representation is used by pgvector, pgvectorscale, and
@@ -126,7 +122,7 @@ Edit `.env` and set `OPENAI_API_KEY`. The default `sample` dataset creates
 
 ### 2. Build and prepare the demo
 
-Confirm that the companion generator exists at `../Incident-search/`, then run:
+Build the images and prepare the sample corpus:
 
 ```bash
 docker compose build
