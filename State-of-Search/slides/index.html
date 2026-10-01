@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="The State of Search in PostgreSQL, a Reveal.js talk deck by Erin Mikail Staples"
+    />
+    <title>The State of Search in PostgreSQL</title>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="deck-frame" aria-hidden="true"></div>
+      <img
+        class="brand-badge"
+        src="./assets/tiger-data-badge-yellow.svg"
+        alt=""
+      />
+      <div class="slides">
+        <section class="title-slide" data-timing="90">
+          <div class="eyebrow">Tiger Data</div>
+          <h1>The State of Search<br />in PostgreSQL</h1>
+          <p class="title-dek">One search box. Several retrieval problems.</p>
+          <div class="presenter">
+            <strong>erin mikail staples</strong>
+            <span>Staff Developer Experience Engineer at Tiger Data</span>
+          </div>
+          <aside class="notes">
+            <p>Welcome everyone. We are going to spend fifty minutes asking one deceptively simple question: what does somebody actually mean when they ask us to add search?</p>
+            <p>This talk uses one fictional ecommerce incident and one corpus all the way through. The technologies change. The question stays honest.</p>
+          </aside>
+        </section>
+
+        <section class="intro-slide" data-timing="90">
+          <div class="intro-layout">
+            <div class="intro-portrait-wrap">
+              <img
+                class="intro-portrait"
+                src="./assets/erin-mikail-staples-profile.png"
+                alt="Erin Mikail Staples"
+              />
+            </div>
+            <div class="intro-copy">
+              <div class="eyebrow">Hi, I’m Erin</div>
+              <h2>erin mikail staples <small>(she/her)</small></h2>
+              <p class="intro-role">Staff Developer Experience Engineer at Tiger Data</p>
+              <p class="intro-bio">I help developers make sense of complicated technology and get something useful running. My work connects developer tooling with education and community, from APIs and AI workflows to the docs and demos that make it all click.</p>
+              <p class="intro-personal">Developer educator · stand-up comedian · rescue dog mom<br />Brooklyn, NYC by way of Reno, Nevada</p>
+            </div>
+          </div>
+          <aside class="notes">
+            <p>Give the audience a quick introduction before beginning the search story.</p>
+            <p>Say: I’m Erin Mikail Staples, a Staff Developer Experience Engineer at Tiger Data. I work at the intersection of code, content, and community, building tools and learning experiences that help developers understand complex systems and get useful work done.</p>
+            <p>Optional personal beat: I’m also a stand-up comedian and rescue dog mom living in Brooklyn by way of Reno. The comedy background is useful when a live demo develops opinions.</p>
+            <p>Bio adapted from Erin’s Tiger Den speaker bio. Portrait supplied by Erin.</p>
+          </aside>
+        </section>
+
+        <section class="query-slide" data-timing="180">
+          <div class="eyebrow">One box, five questions</div>
+          <div class="query-search" aria-label="Search box with five example queries">
+            <div class="query-search-field">
+              <span>SEARCH</span>
+              <div class="query-typed" aria-live="polite">
+                <strong class="fragment fade-out" data-fragment-index="0">Search incidents, logs, and runbooks</strong>
+                <code class="fragment fade-in-then-out" data-fragment-index="0">PG_53300</code>
+                <code class="fragment fade-in-then-out" data-fragment-index="1">conection pool exaustion</code>
+                <code class="fragment fade-in-then-out" data-fragment-index="2">too many clients already</code>
+                <code class="fragment fade-in-then-out" data-fragment-index="3">why does checkout keep losing database capacity</code>
+                <code class="fragment fade-in" data-fragment-index="4">payments deploy saturated postgres max_connections</code>
+              </div>
+              <kbd>ENTER</kbd>
+            </div>
+          </div>
+          <p class="bottom-line fragment fade-in" data-fragment-index="5">Same rectangle. Wildly different job descriptions.</p>
+          <aside class="notes">
+            <p>The same search box fills with five different questions. Reveal one query at a time. Ask what relevant means before showing the next.</p>
+            <p>The first query has an identity. The second contains human spelling. The third depends on known language. The fourth asks for meaning. The last mixes domain language, a deploy, and a failure mode.</p>
+            <p>When someone says add search, our first job is diagnosis. Shipping an embedding model before answering that question is architecture by horoscope.</p>
+          </aside>
+        </section>
+
+        <section data-timing="120">
+          <div class="eyebrow">Diagnosing the query</div>
+          <h2>Five queries, five different retrieval jobs</h2>
+          <p class="mapping-context">The same search box can receive an identifier, a typo, known terms, a paraphrase, or a mix.</p>
+          <div class="mapping-head" aria-hidden="true">
+            <span>What they typed</span><span>Signal in the query</span><span>Start with</span>
+          </div>
+          <div class="mapping-list">
+            <div><code>PG_53300</code><strong>Exact identifier</strong><span>B-tree lookup</span></div>
+            <div><code>conection pool exaustion</code><strong>Misspelled phrase</strong><span><code>pg_trgm</code></span></div>
+            <div><code>too many clients already</code><strong>Known technical words</strong><span>FTS or BM25</span></div>
+            <div><code>why does checkout keep losing database capacity</code><strong>Meaning in different words</strong><span>Vector search</span></div>
+            <div><code>payments deploy saturated postgres max_connections</code><strong>Terms, meaning, and filters</strong><span>Hybrid search plus SQL</span></div>
+          </div>
+          <p class="takeaway">Diagnose the query before choosing the index.</p>
+          <aside class="notes">
+            <p>This slide translates the five example queries into retrieval requirements. Read it from left to right: what the person typed, the signal we can recognize, and the simplest useful starting point.</p>
+            <p>PG_53300 already identifies the record, so use an ordinary lookup. The misspelled phrase needs character-level tolerance. Known technical language favors lexical ranking. A paraphrase needs semantic similarity. The final query mixes technical tokens, meaning, and relational filters, so it needs hybrid retrieval plus SQL context.</p>
+            <p>Connect each row to a real user: support pastes an error code, a customer makes a typo, an engineer knows the vocabulary, a knowledge worker describes the idea differently, and an operator mixes all of those signals.</p>
+            <p>The point is diagnostic. The shape of the question tells us which retrieval promise matters before we debate indexes or systems.</p>
+          </aside>
+        </section>
+
+        <section data-timing="90">
+          <div class="eyebrow">The incident thread</div>
+          <h2>One failure, evidence everywhere</h2>
+          <div class="incident-thread">
+            <div><span>01</span><strong>Deploy</strong><small>payments service</small></div>
+            <div><span>02</span><strong>Connections saturate</strong><small><code>max_connections</code></small></div>
+            <div><span>03</span><strong>Checkout degrades</strong><small>customer impact</small></div>
+            <div><span>04</span><strong>Evidence scatters</strong><small>events, notes, runbooks, issues</small></div>
+          </div>
+          <p class="takeaway">The corpus stays fixed so the tradeoffs cannot hide behind different data.</p>
+          <aside class="notes">
+            <p>Establish the fictional ecommerce incident. A deployment contributes to exhausted PostgreSQL connections. Checkout degrades. Evidence lives across operational records and narrative documents.</p>
+            <p>Every method gets the same corpus, metadata, labels, and embedding model.</p>
+          </aside>
+        </section>
+
+        <section data-timing="90">
+          <div class="eyebrow">The search ladder</div>
+          <h2>The smallest system that answers the question</h2>
+          <ol class="ladder">
+            <li><span>01</span><strong>Known identity</strong><small>B-tree, JSONB, SQL</small></li>
+            <li><span>02</span><strong>Spelling variation</strong><small><code>pg_trgm</code></small></li>
+            <li><span>03</span><strong>Known words</strong><small>FTS, BM25</small></li>
+            <li><span>04</span><strong>Same meaning</strong><small>vectors</small></li>
+            <li><span>05</span><strong>Language plus meaning</strong><small>hybrid retrieval</small></li>
+          </ol>
+          <p class="takeaway">Climb only as high as the product needs.</p>
+          <aside class="notes">
+            <p>This ladder is the throughline for the rest of the talk. Start with certainty. Add fuzziness, ranking, or semantic representation only when the user problem requires it.</p>
+          </aside>
+        </section>
+
+        <section data-timing="120">
+          <div class="eyebrow">A short history</div>
+          <h2>PostgreSQL did not wake up one morning and discover search</h2>
+          <div class="timeline">
+            <div><time>early 2000s</time><strong><code>tsearch</code></strong><span>contrib work</span></div>
+            <div><time>2008</time><strong>FTS in core</strong><span>PostgreSQL 8.3</span></div>
+            <div><time>2021</time><strong>pgvector</strong><span>vector type and IVFFlat</span></div>
+            <div><time>2023</time><strong>HNSW</strong><span>pgvector 0.5.0</span></div>
+            <div><time>2024+</time><strong>More physical choices</strong><span>DiskANN, BM25, hybrid</span></div>
+          </div>
+          <p class="takeaway">Extensibility is the old trick powering the new tricks.</p>
+          <aside class="notes">
+            <p>PostgreSQL arrays could store numbers. They did not provide embedding semantics, distance operators, or approximate nearest-neighbor indexes.</p>
+            <p>PostgreSQL 8.3 shipped full-text search in core on February 4, 2008. pgvector 0.1.0 dates to April 20, 2021. pgvector 0.5.0 added HNSW on August 28, 2023.</p>
+            <p>Sources: https://www.postgresql.org/docs/8.3/release-8-3.html, https://www.postgresql.org/docs/current/textsearch.html, https://www.postgresql.org/docs/current/arrays.html, https://github.com/pgvector/pgvector/blob/master/CHANGELOG.md</p>
+          </aside>
+        </section>
+
+        <section class="demo-slide" data-timing="180">
+          <div class="demo-kicker">LIVE DEMO 01 · 2 MIN</div>
+          <h2>Exact beats clever</h2>
+          <pre><code class="language-bash" data-trim>docker compose run --rm app python -m app.demo search exact PG_53300</code></pre>
+          <blockquote>This is a database lookup wearing a search-box costume.</blockquote>
+          <div class="demo-cues"><span>B-tree</span><span>current row</span><span>join the evidence</span></div>
+          <aside class="notes">
+            <p>Run the command. Show the error-code index and connect the matching event to its incident.</p>
+            <p>Say: PG_53300 has a precise identity. A B-tree lookup is cheap, deterministic, and current in the same transaction as the source row. An embedding adds cost and ambiguity.</p>
+            <p>Freshness, permissions, constraints, and joins are relevance features, even when benchmark charts forget them.</p>
+          </aside>
+        </section>
+
+        <section class="demo-slide" data-timing="180">
+          <div class="demo-kicker">LIVE DEMO 02 · 2 MIN</div>
+          <h2>Humans type like humans</h2>
+          <pre><code class="language-bash" data-trim>docker compose run --rm app python -m app.demo compare \
+  "conection pool exaustion" trigram fts</code></pre>
+          <div class="split-statement">
+            <p><strong><code>pg_trgm</code></strong><span>Character overlap recovers spelling variation.</span></p>
+            <p><strong>Full-text search</strong><span>Language rules cannot repair every typo.</span></p>
+          </div>
+          <p class="takeaway">Fuzzy spelling and semantic similarity are different jobs.</p>
+          <aside class="notes">
+            <p>Character trigrams work well for misspellings, partial names, titles, identifiers, and autocomplete.</p>
+            <p>They do not understand meaning. Two phrases can describe the same failure with little character overlap.</p>
+          </aside>
+        </section>
+
+        <section data-timing="120">
+          <div class="eyebrow">Lexical retrieval</div>
+          <h2>PostgreSQL already has a search engine</h2>
+          <div class="lexical-flow">
+            <div><strong>document</strong><code>too many clients already</code></div>
+            <div><strong><code>tsvector</code></strong><code>'client':3 'mani':2</code></div>
+            <div><strong><code>tsquery</code></strong><code>'client' &amp; 'mani'</code></div>
+            <div><strong>ranked result</strong><code>ts_rank_cd(...)</code></div>
+          </div>
+          <div class="capabilities">Normalization · dictionaries · phrase operators · field weights · GIN</div>
+          <aside class="notes">
+            <p>A tsvector stores normalized lexemes and positions. A tsquery expresses terms and logical or phrase relationships.</p>
+            <p>Native FTS remains a strong default when users know the vocabulary and the product needs PostgreSQL's parsing and query control.</p>
+            <p>Source: https://www.postgresql.org/docs/current/textsearch.html</p>
+          </aside>
+        </section>
+
+        <section class="demo-slide" data-timing="240">
+          <div class="demo-kicker">LIVE DEMO 03 · 3 MIN</div>
+          <h2>Ranking changes the answer</h2>
+          <pre><code class="language-bash" data-trim>docker compose run --rm app python -m app.demo compare \
+  "too many clients already" fts bm25</code></pre>
+          <div class="bm25-line">
+            <div><b>Rare terms</b><span>matter more</span></div>
+            <div><b>Repetition</b><span>eventually stops helping</span></div>
+            <div><b>Document length</b><span>changes the contest</span></div>
+          </div>
+          <p class="takeaway"><code>pg_textsearch</code> keeps BM25 in PostgreSQL. It also brings another index lifecycle.</p>
+          <aside class="notes">
+            <p>Explain the ordering, not just whether rows matched.</p>
+            <p>BM25 adds inverse document frequency, term-frequency saturation, and document-length normalization.</p>
+            <p>Keep the operating cost attached: builds, write behavior, compaction, backups, compatibility, and upgrades.</p>
+          </aside>
+        </section>
+
+        <section data-timing="150">
+          <div class="eyebrow">Semantic retrieval</div>
+          <h2>Vectors change the representation</h2>
+          <div class="three-layers">
+            <div><span>01</span><strong>Embedding model</strong><p>Creates the representation</p><code>text-embedding-3-small</code></div>
+            <div><span>02</span><strong>Distance function</strong><p>Compares representations</p><code>cosine distance</code></div>
+            <div><span>03</span><strong>Index</strong><p>Finds candidates efficiently</p><code>exact · IVFFlat · HNSW · DiskANN</code></div>
+          </div>
+          <p class="takeaway">Changing the index does not create a new embedding.</p>
+          <aside class="notes">
+            <p>The demo uses OpenAI text-embedding-3-small at its default 1,536 dimensions. Every database method and Elasticsearch gets the same model and dimensions.</p>
+            <p>Keep model, distance, and index separate. Index tuning cannot rescue a representation that does not capture the task.</p>
+            <p>Source: https://developers.openai.com/api/docs/models/text-embedding-3-small</p>
+          </aside>
+        </section>
+
+        <section class="demo-slide" data-timing="360">
+          <div class="demo-kicker">LIVE DEMO 04 · 5 MIN</div>
+          <h2>Approximate search needs an exact baseline</h2>
+          <pre><code class="language-bash" data-trim>docker compose run --rm app python -m app.demo compare \
+  "why does checkout keep losing database capacity" \
+  vector_exact hnsw ivfflat diskann</code></pre>
+          <div class="baseline">
+            <strong>Exact pgvector</strong>
+            <span>The reference set</span>
+            <small>Compare ANN overlap against this, not against vibes.</small>
+          </div>
+          <aside class="notes">
+            <p>Anchor each approximate method to exact vector search. Call the comparison top-k agreement or overlap, not accuracy.</p>
+            <p>At 5,390 rows the exact scan may win. The sample corpus proves wiring. It does not establish performance.</p>
+          </aside>
+        </section>
+
+        <section data-timing="180">
+          <div class="eyebrow">ANN physical design</div>
+          <h2>The SQL can stay the same while the resource bill changes</h2>
+          <table class="tradeoff-table">
+            <thead><tr><th>Index</th><th>Physical shape</th><th>Begin here when</th></tr></thead>
+            <tbody>
+              <tr><td>IVFFlat</td><td>Trained clustered lists</td><td>Build simplicity matters and data is stable</td></tr>
+              <tr><td>HNSW</td><td>Navigable proximity graph</td><td>A mature speed and recall tradeoff earns memory</td></tr>
+              <tr><td>StreamingDiskANN</td><td>Disk-oriented graph with compression</td><td>Storage-aware search fits the workload</td></tr>
+            </tbody>
+          </table>
+          <p class="question-line">Recall target · filters · updates · build window · memory · storage · vacuum · replicas · backups · upgrades</p>
+          <aside class="notes">
+            <p>IVFFlat depends on representative training data and probe tuning. HNSW spends more memory and build time for a strong speed and recall curve. StreamingDiskANN targets storage-aware graph traversal and quantization.</p>
+            <p>For every index, ask the operational questions shown along the bottom.</p>
+          </aside>
+        </section>
+
+        <section class="yellow-slide" data-background-color="#F4FF7D" data-state="light-slide" data-timing="90">
+          <div class="eyebrow dark">Benchmark manners</div>
+          <h2>“Fast” without context is fan fiction</h2>
+          <div class="context-grid">
+            <span>corpus size</span><span>dimensions</span><span>filters</span><span>update rate</span>
+            <span>hardware</span><span>cache state</span><span>parameters</span><span>concurrency</span>
+          </div>
+          <p class="takeaway dark">Every ANN claim needs an exact baseline and a recall target.</p>
+          <aside class="notes">
+            <p>Timescale reported 28 times lower p95 latency and 16 times higher query throughput than Pinecone at 99 percent recall. Keep the attribution and workload attached: 50 million 768-dimensional Cohere embeddings against Pinecone's s1 index.</p>
+            <p>That result deserves attention. It is not a universal law of physics.</p>
+            <p>Sources: https://docs.timescale.com/about/latest/changelog/ and https://www.timescale.com/newsroom/postgresql-is-now-faster-than-pinecone-75-cheaper-with-new-open-source</p>
+          </aside>
+        </section>
+
+        <section class="demo-slide" data-timing="240">
+          <div class="demo-kicker">LIVE DEMO 05 · 3 MIN</div>
+          <h2>Hybrid is where the product gets useful</h2>
+          <pre><code class="language-bash" data-trim>docker compose run --rm app python -m app.demo search hybrid \
+  "payments deploy saturated postgres max_connections"</code></pre>
+          <div class="hybrid-equation">
+            <div><strong>BM25</strong><small>technical tokens</small></div>
+            <b>+</b>
+            <div><strong>vectors</strong><small>paraphrased failure mode</small></div>
+            <b>+</b>
+            <div><strong>SQL</strong><small>time, service, permission, evidence</small></div>
+          </div>
+          <aside class="notes">
+            <p>BM25 recognizes postgres and max_connections. Vector search recognizes exhausted database capacity.</p>
+            <p>SQL applies filters and joins the evidence a person needs to trust the result.</p>
+          </aside>
+        </section>
+
+        <section data-timing="120">
+          <div class="eyebrow">Reciprocal Rank Fusion</div>
+          <h2>Fuse positions, not incomparable scores</h2>
+          <div class="rrf">
+            <div class="rank-list"><strong>Lexical rank</strong><span>1 · runbook</span><span>2 · incident note</span><span>3 · issue</span></div>
+            <div class="formula"><code>Σ 1 / (k + rank)</code><small>Each list votes by position</small></div>
+            <div class="rank-list"><strong>Semantic rank</strong><span>1 · incident note</span><span>2 · issue</span><span>3 · runbook</span></div>
+          </div>
+          <p class="takeaway">A BM25 score and a cosine similarity do not share units. Please do not make them kiss.</p>
+          <aside class="notes">
+            <p>Say: A BM25 score and a cosine similarity do not share units. Please do not make them kiss. RRF combines rank positions without pretending raw lexical and vector scores mean the same thing.</p>
+            <p>Retrieval produces candidates. Product constraints and relational evidence decide whether the result is useful.</p>
+          </aside>
+        </section>
+
+        <section class="demo-slide" data-timing="180">
+          <div class="demo-kicker">LIVE DEMO 06 · 3 MIN</div>
+          <h2>The on-call workflow around retrieval</h2>
+          <div class="response-workflow" aria-label="Incident response workflow">
+            <div><span>01</span><strong>Scope</strong><small>queue, urgency, affected services</small></div>
+            <div><span>02</span><strong>Correlate</strong><small>event rhythm, deployment, runbook</small></div>
+            <div><span>03</span><strong>Retrieve</strong><small>evidence search with source records</small></div>
+            <div><span>04</span><strong>Decide</strong><small>status brief and safest next check</small></div>
+          </div>
+          <p class="workflow-url"><code>127.0.0.1:3000</code> · Reflex incident command center</p>
+          <aside class="notes">
+            <p>Open the companion Incident Search Reflex app. Start with the incident queue rather than the search box.</p>
+            <p>Select the database-pool or payment-related incident. Compare event rhythm with the linked deployment, generate the cited status brief, then open Evidence search.</p>
+            <p>The Streamlit comparison isolates retrieval behavior. This interface shows the responder's sequence around it: establish scope, inspect chronology and changes, retrieve missing evidence, and choose the next check.</p>
+            <p>State clearly that the dashboard contains historical synthetic data. The timestamp is the latest record in the corpus, not live production state.</p>
+          </aside>
+        </section>
+
+        <section class="demo-slide" data-timing="300">
+          <div class="demo-kicker">LIVE DEMO 07 · 4 MIN</div>
+          <h2>Where Elasticsearch earns the boundary</h2>
+          <pre><code class="language-bash" data-trim>docker compose --profile elastic run --rm app python -m app.demo compare \
+  "payments deploy saturated postgres max_connections" \
+  bm25 hybrid elastic_bm25 elastic_hybrid</code></pre>
+          <div class="boundary">
+            <div><strong>PostgreSQL source row</strong><small>fresh · relational · governed</small></div>
+            <div class="pipeline">change pipeline</div>
+            <div><strong>Elasticsearch document</strong><small>denormalized · independently scaled</small></div>
+          </div>
+          <aside class="notes">
+            <p>Elasticsearch is a dedicated retrieval system, not another PostgreSQL access method.</p>
+            <p>Discuss mappings, refresh delay, reconciliation, permissions, backups, and operations before comparing latency.</p>
+            <p>A local single-node comparison is not a universal scalability verdict.</p>
+            <p>Sources: https://www.elastic.co/docs/solutions/search/hybrid-search, https://www.elastic.co/docs/solutions/search/vector/knn, https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html</p>
+          </aside>
+        </section>
+
+        <section data-timing="180">
+          <div class="eyebrow">The system boundary</div>
+          <h2>When a second system pays rent</h2>
+          <div class="decision-sides">
+            <div>
+              <h3>Keep search in PostgreSQL</h3>
+              <p>Transactional freshness</p><p>joins and row-level rules</p><p>adequate measured relevance</p><p>one operating model</p>
+            </div>
+            <div>
+              <h3>Evaluate Elasticsearch</h3>
+              <p>search is a primary product surface</p><p>analyzers and facets drive value</p><p>query scale needs independence</p><p>a team can own the second system</p>
+            </div>
+          </div>
+          <p class="takeaway">The second system must repay the consistency and ownership tax.</p>
+          <aside class="notes">
+            <p>Elasticsearch earns its place when search-specific capabilities and independent query scaling justify ingestion lag, authorization duplication, reconciliation, and another failure domain.</p>
+            <p>Running both is common. Common and free are not synonyms.</p>
+          </aside>
+        </section>
+
+        <section class="demo-slide" data-timing="180">
+          <div class="demo-kicker">LIVE DEMO 08 · 2 MIN</div>
+          <h2>Finish with evidence</h2>
+          <pre><code class="language-bash" data-trim>docker compose run --rm app python -m app.evaluate --questions 10</code></pre>
+          <div class="metric-defs">
+            <div><strong>Labeled recall</strong><span>Did we retrieve a relevant incident family?</span></div>
+            <div><strong>ANN overlap</strong><span>Did approximate search reproduce exact neighbors?</span></div>
+            <div><strong>Latency</strong><span>How long under the stated conditions?</span></div>
+          </div>
+          <aside class="notes">
+            <p>Show recall by query kind. Keep three measurements separate.</p>
+            <p>Search quality is not a latency screenshot. It is not the result that looked nicest during development.</p>
+            <p>Say: on this machine, with this corpus and these settings.</p>
+          </aside>
+        </section>
+
+        <section class="closing-slide" data-background-color="#F4FF7D" data-state="light-slide" data-timing="150">
+          <div class="eyebrow dark">To sum things up</div>
+          <h2>Match the retrieval method to the question</h2>
+          <div class="close-rules close-rules-four">
+            <p><span>01</span>Use exact and relational search when the query already has an identity.</p>
+            <p><span>02</span>Add lexical, fuzzy, or semantic retrieval only when the question requires it.</p>
+            <p><span>03</span>Measure approximate search against an exact baseline and a recall target.</p>
+            <p><span>04</span>Add a second system when its product value pays for the operating boundary.</p>
+          </div>
+          <p class="closing-tag">PostgreSQL covers enough of the stack to make that boundary a measured decision.</p>
+          <aside class="notes">
+            <p>Recap the decision sequence. Begin with the shape of the question, then choose the smallest retrieval method that can answer it.</p>
+            <p>Exact lookup, fuzzy text, lexical ranking, semantic similarity, and hybrid retrieval solve different problems. Approximate indexes need an exact comparison. A dedicated engine needs enough product value to justify the consistency and ownership costs.</p>
+            <p>Final line for this slide: PostgreSQL does not replace every search engine. It covers enough of the stack that we can place the boundary from evidence instead of habit.</p>
+          </aside>
+        </section>
+
+        <section class="play-slide" data-timing="90">
+          <div class="play-layout">
+            <div class="play-copy">
+              <div class="eyebrow">Play with it yourself</div>
+              <h2>Run the same searches on the same incident corpus</h2>
+              <p>Explore the code, sample data, retrieval methods, demo commands, and evaluation harness.</p>
+              <a class="repo-link" href="https://tsdb.co/pgsummit">tsdb.co/pgsummit</a>
+              <div class="contact-info">
+                <a href="mailto:erin@tigerdata.com">erin@tigerdata.com</a>
+                <span>staff developer education engineer</span>
+                <a href="https://github.com/erinmikailstaples">github.com/erinmikailstaples</a>
+              </div>
+            </div>
+            <div class="qr-placeholder" aria-label="QR code placeholder">
+              <span>QR CODE</span>
+              <small>COMING SOON</small>
+            </div>
+            <p class="closing-thanks">Thank you. May your recall be high and your demo containers already warm.</p>
+          </div>
+          <aside class="notes">
+            <p>Invite the audience to try the repository after the talk. Point out that it contains the corpus, database setup, search implementations, live-demo commands, and evaluation harness.</p>
+            <p>Leave the contact details on screen during questions: erin@tigerdata.com and github.com/erinmikailstaples.</p>
+            <p>Point the audience to tsdb.co/pgsummit as the short link for the repository. The QR code is still pending. Replace the placeholder before presenting and test the code from a phone at the venue.</p>
+            <p>Close with: Thank you. May your recall be high and your demo containers already warm.</p>
+          </aside>
+        </section>
+
+        <section class="appendix-slide" data-visibility="uncounted">
+          <div class="eyebrow">Appendix · demo runbook</div>
+          <h2>The twenty-four-minute demo tour</h2>
+          <table class="runbook-table">
+            <tbody>
+              <tr><td>01</td><td>Exact lookup</td><td>2 min</td></tr>
+              <tr><td>02</td><td>Trigram vs FTS</td><td>2 min</td></tr>
+              <tr><td>03</td><td>FTS vs BM25</td><td>3 min</td></tr>
+              <tr><td>04</td><td>Exact vs ANN indexes</td><td>5 min</td></tr>
+              <tr><td>05</td><td>Hybrid retrieval</td><td>3 min</td></tr>
+              <tr><td>06</td><td>On-call command center</td><td>3 min</td></tr>
+              <tr><td>07</td><td>Elasticsearch boundary</td><td>4 min</td></tr>
+              <tr><td>08</td><td>Labeled evaluation</td><td>2 min</td></tr>
+            </tbody>
+          </table>
+          <aside class="notes"><p>Backup reference. Streamlit compares retrieval methods. Reflex shows the response workflow. The terminal remains the canonical control surface.</p></aside>
+        </section>
+
+        <section class="appendix-slide" data-visibility="uncounted">
+          <div class="eyebrow">Appendix · when the demo gods demand tribute</div>
+          <h2>Failure handling</h2>
+          <div class="failure-list">
+            <p><strong>OpenAI unavailable</strong><span>Use cached prepared rows and rehearsed queries.</span></p>
+            <p><strong>Elasticsearch unavailable</strong><span>Use the boundary diagram and saved results.</span></p>
+            <p><strong>Optional extension absent</strong><span>Show <code>doctor</code>. Omit only that method.</span></p>
+            <p><strong>Browser UI fails</strong><span>Run every scene through <code>app.demo</code>.</span></p>
+            <p><strong>Cold query is slow</strong><span>Narrate the cache effect. Keep the number honest.</span></p>
+          </div>
+          <aside class="notes"><p>Do not display .env or the OpenAI key. Keep the saved evaluation CSV and one screenshot available before the talk.</p></aside>
+        </section>
+
+        <section class="appendix-slide" data-visibility="uncounted">
+          <div class="eyebrow">Appendix · sources</div>
+          <h2>Primary references</h2>
+          <div class="source-list">
+            <p>PostgreSQL 8.3 release notes and full-text search documentation</p>
+            <p>pgvector changelog</p>
+            <p>Timescale pgvectorscale announcement and benchmark write-up</p>
+            <p>OpenAI <code>text-embedding-3-small</code> model documentation</p>
+            <p>Elasticsearch hybrid search, kNN, and Query DSL documentation</p>
+            <p>Tiger Data public brand assets and visual system</p>
+          </div>
+          <small class="source-foot">Full URLs and fact-check notes live in each slide's speaker notes and <code>03_talk-track.md</code>.</small>
+          <aside class="notes">
+            <p>PostgreSQL: https://www.postgresql.org/docs/8.3/release-8-3.html and https://www.postgresql.org/docs/current/textsearch.html</p>
+            <p>pgvector: https://github.com/pgvector/pgvector/blob/master/CHANGELOG.md</p>
+            <p>Timescale: https://docs.timescale.com/about/latest/changelog/ and https://www.timescale.com/newsroom/postgresql-is-now-faster-than-pinecone-75-cheaper-with-new-open-source</p>
+            <p>OpenAI: https://developers.openai.com/api/docs/models/text-embedding-3-small</p>
+            <p>Elasticsearch: https://www.elastic.co/docs/solutions/search/hybrid-search</p>
+            <p>Brand: https://www.tigerdata.com/brand</p>
+          </aside>
+        </section>
+      </div>
+    </div>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>

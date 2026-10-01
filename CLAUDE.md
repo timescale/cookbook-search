@@ -10,13 +10,19 @@ cookbook-search/
 ├── LICENSE                   # Apache 2.0
 ├── README.md                 # Repo overview, prerequisites, getting started
 ├── CLAUDE.md                 # This file
-└── Hybrid-search/            # First cookbook
-    ├── README.md             # Full tutorial walkthrough
-    ├── setup.sql             # One-command DB setup
-    ├── embed.py              # Embedding generation script
-    ├── requirements.txt      # Python dependencies
-    ├── .env.example          # Template for API keys (copy to .env)
-    └── .env                  # Your actual keys (gitignored)
+├── Hybrid-search/            # Focused hybrid-search cookbook
+│   ├── README.md             # Full tutorial walkthrough
+│   ├── setup.sql             # Database, sample data, and indexes
+│   ├── embed.py              # OpenAI embedding generation
+│   ├── requirements.txt      # Python dependencies
+│   └── .env.example          # Environment-variable template
+└── State-of-Search/          # Multi-method demo and presentation
+    ├── README.md             # Setup, operation, and verification guide
+    ├── app/                  # Preparation, search, UI, and evaluation code
+    ├── sql/                  # Schema and index definitions
+    ├── slides/               # Reveal.js presentation
+    ├── compose.yaml          # PostgreSQL, app, and optional Elasticsearch
+    └── 00_tutorial.md        # Detailed workshop tutorial
 ```
 
 ## Skills
@@ -48,7 +54,8 @@ Reports results as a pass/fail checklist with specific fix instructions for each
 ## Conventions
 
 - **Database:** PostgreSQL 17+ with pg_textsearch and pgvectorscale extensions
-- **Python:** 3.9+, managed with uv (link to pip/conda as alternatives)
+- **Python:** 3.9+ for Hybrid Search and 3.11+ for State of Search, managed
+  with uv where a local environment is needed
 - **Environment variables:** stored in `.env` within each cookbook folder, loaded via `python-dotenv`
 - **SQL setup files:** idempotent with `IF NOT EXISTS`, commented section headers
 - **License:** Apache 2.0 for the repo; dataset licenses noted individually
