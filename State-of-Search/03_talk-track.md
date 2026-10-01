@@ -1,6 +1,6 @@
 # Speaker Talk Track: The State of Search
 
-Target length: 45–50 minutes, including a 15–20 minute live demo.
+Target length: 50 minutes, including the 24-minute live demo sequence.
 
 This is a spoken script, not prose to read word-for-word. The
 indented blocks are suggested language; the code blocks are stage directions.
@@ -133,8 +133,7 @@ and [benchmark write-up](https://www.timescale.com/newsroom/postgresql-is-now-fa
 > That history brings us to the current landscape. Native full-text search
 > handles mature lexical retrieval. pgvector supplies vector types, exact
 > distance, IVFFlat, and HNSW. pgvectorscale adds a disk-conscious ANN option.
-> pg_textsearch brings BM25 ranking into PostgreSQL. pgvectorscale adds a
-> disk-conscious ANN option. Hybrid systems combine lexical and semantic
+> pg_textsearch brings BM25 ranking into PostgreSQL. Hybrid systems combine lexical and semantic
 > candidates, and ordinary SQL still applies permissions, time, service,
 > tenant, and relational context.
 
@@ -299,6 +298,10 @@ docker compose --profile elastic run --rm app python -m app.demo compare \
   bm25 hybrid elastic_bm25 elastic_hybrid
 ```
 
+The local demo runs Elasticsearch BM25 and kNN separately, then performs RRF
+over their rank positions in the Python client. This keeps the comparison
+available without relying on Elasticsearch's licensed native RRF retriever.
+
 > Elasticsearch fits when search is a product in its own right: many tailored
 > analyzers, autocomplete and highlighting, search-specific aggregations,
 > independent query scaling, shard and replica controls, or an organization
@@ -335,10 +338,12 @@ docker compose run --rm app python -m app.evaluate --questions 10
 Move to the summary slide and recap the four decisions:
 
 > First, match the retrieval method to the question. Use exact and relational
-> search when the query already has an identity. Add fuzzy, lexical, semantic,
-> or hybrid retrieval only when the question requires it.
+> search when the query already has an identity.
 
-> Second, keep an exact baseline and a recall target when you evaluate an
+> Second, add fuzzy, lexical, semantic, or hybrid retrieval only when the
+> question requires it.
+
+> Third, keep an exact baseline and a recall target when you evaluate an
 > approximate index. A fast query has little value when it quietly returns the
 > wrong neighborhood.
 
@@ -353,16 +358,17 @@ Final line:
 
 ## Play with it yourself
 
-Show the repository slide and point to the short link and QR code placeholder.
+Show the repository slide and point to the repository link, demo link, and QR
+code.
 
 > If you want to run these comparisons yourself, the repository includes the
 > incident corpus, database setup, retrieval implementations, demo commands,
 > and evaluation harness. You can ask the same questions, change the corpus
 > size, tune the indexes, and see where the tradeoffs move on your hardware.
 
-The repository is available at `tsdb.co/pgsummit`. The QR code is still coming
-soon. Before presenting, replace the placeholder and test the QR code from a
-phone at the venue.
+The repository is available at `tsdb.co/pgsummit`. The live demo and QR code
+point to `tsdb.co/7r1y5at2`. Test the QR code from a phone at the venue before
+presenting.
 Leave the contact details on screen during questions: `erin@tigerdata.com` and
 `github.com/erinmikailstaples`.
 

@@ -14,7 +14,7 @@ This demo compares:
 - Approximate vector search with pgvector IVFFlat and HNSW.
 - StreamingDiskANN with `pgvectorscale`.
 - Hybrid BM25 + HNSW retrieval with Reciprocal Rank Fusion (RRF).
-- Elasticsearch BM25, kNN, and hybrid RRF as the dedicated-search-engine comparison.
+- Elasticsearch BM25 and kNN, with client-side hybrid RRF, as the dedicated-search-engine comparison.
 
 The data is a synthetic incident memory for a fictional ecommerce platform. It
 is generated deterministically by the included `generate_data.py` entrypoint,
@@ -89,7 +89,7 @@ not included in this repository.
 | `app/ui.py` | Streamlit side-by-side search comparison. |
 | `app/evaluate.py` | Recall-at-k evaluation using the labeled incident questions. |
 | `slides/` | Reveal.js presentation deck, including the on-call workflow that applies the retrieval stack. |
-| `00_tutorial.md` | Step-by-step tutorial and executable command script. |
+| `00_tutorial.mdx` | Step-by-step tutorial and executable command script. |
 | `01_talk-outline.md` | Narrative 50-minute talk outline. |
 | `02_demo-plan.md` | Presenter runbook, timing, failure recovery, and backup path. |
 | `03_talk-track.md` | Full speaker narrative, historical arc, transitions, claims, and citations. |
@@ -223,9 +223,21 @@ docker compose run --rm app python -m app.evaluate --questions 10
 # Complete labeled-family evaluation
 docker compose run --rm app python -m app.evaluate
 
-# Rebuild only indexes after changing SQL
+# Build or rebuild the vector indexes after embedding
 docker compose run --rm app python -m app.prepare index
 ```
+
+If all vector methods return zero results, check preparation first:
+
+```bash
+docker compose run --rm app python -m app.prepare doctor
+docker compose run --rm app python -m app.prepare embed
+docker compose run --rm app python -m app.prepare index
+```
+
+A nonzero corpus with `0 embedded` means the text data is present but the
+document embeddings are not. The `load` command resets stored embeddings, so
+rerun `embed` and `index` after reloading the corpus.
 
 Evaluation writes `results/evaluation.csv` and reports hit-based Recall@10 by
 query kind. This is a teaching harness, not a publication-quality benchmark:
@@ -277,6 +289,6 @@ authorization duplication, backups, upgrades, and another failure domain.
 
 ## Read next
 
-Follow [`00_tutorial.md`](./00_tutorial.md), rehearse with
+Follow [`00_tutorial.mdx`](./00_tutorial.mdx), rehearse with
 [`02_demo-plan.md`](./02_demo-plan.md), and use
 [`03_talk-track.md`](./03_talk-track.md) for the complete speaker narrative.

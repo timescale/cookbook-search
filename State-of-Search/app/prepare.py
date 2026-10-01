@@ -222,9 +222,8 @@ def embed() -> None:
 
 def build_indexes() -> None:
     with connect(dict_rows=False) as conn:
-        run_sql_file(conn, "indexes.sql")
         run_sql_file(conn, "vector-indexes.sql")
-    print("Indexes built")
+    print("Vector indexes built")
 
 
 def load_elasticsearch() -> None:
@@ -292,9 +291,33 @@ def doctor() -> None:
         methods = {row["amname"] for row in cur.fetchall()}
         cur.execute("SELECT count(*) AS rows, count(embedding) AS embedded FROM search_items")
         counts = cur.fetchone()
+        cur.execute(
+            """
+            SELECT
+              (SELECT count(*) FROM vectors_hnsw) AS hnsw,
+              (SELECT count(*) FROM vectors_ivfflat) AS ivfflat,
+              (SELECT count(*) FROM vectors_diskann) AS diskann
+            """
+        )
+        vector_counts = cur.fetchone()
     print("Extensions:", ", ".join(f"{k}={v}" for k, v in extensions.items()))
     print("Search access methods:", ", ".join(sorted(methods & {"bm25", "hnsw", "ivfflat", "diskann"})))
     print(f"Corpus: {counts['rows']:,} rows; {counts['embedded']:,} embedded")
+    print(
+        "Vector tables: "
+        f"hnsw={vector_counts['hnsw']:,}, "
+        f"ivfflat={vector_counts['ivfflat']:,}, "
+        f"diskann={vector_counts['diskann']:,}"
+    )
+    if counts["rows"] and not counts["embedded"]:
+        print(
+            "Next step: run `docker compose run --rm app python -m app.prepare embed`, "
+            "then run the index command."
+        )
+    elif counts["embedded"] != counts["rows"]:
+        print("Warning: document embedding preparation is incomplete; rerun the embed command.")
+    elif any(vector_counts[name] != counts["embedded"] for name in vector_counts):
+        print("Warning: vector tables are incomplete; rerun the embed command before indexing.")
 
 
 def all_steps(include_elastic: bool = False) -> None:

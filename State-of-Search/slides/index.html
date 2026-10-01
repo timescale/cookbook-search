@@ -18,7 +18,7 @@
         alt=""
       />
       <div class="slides">
-        <section class="title-slide" data-timing="90">
+        <section class="title-slide" data-timing="60">
           <div class="eyebrow">Tiger Data</div>
           <h1>The State of Search<br />in PostgreSQL</h1>
           <p class="title-dek">One search box. Several retrieval problems.</p>
@@ -32,7 +32,7 @@
           </aside>
         </section>
 
-        <section class="intro-slide" data-timing="90">
+        <section class="intro-slide" data-timing="60">
           <div class="intro-layout">
             <div class="intro-portrait-wrap">
               <img
@@ -57,7 +57,7 @@
           </aside>
         </section>
 
-        <section class="query-slide" data-timing="180">
+        <section class="query-slide" data-timing="150">
           <div class="eyebrow">One box, five questions</div>
           <div class="query-search" aria-label="Search box with five example queries">
             <div class="query-search-field">
@@ -81,7 +81,7 @@
           </aside>
         </section>
 
-        <section data-timing="120">
+        <section data-timing="90">
           <div class="eyebrow">Diagnosing the query</div>
           <h2>Five queries, five different retrieval jobs</h2>
           <p class="mapping-context">The same search box can receive an identifier, a typo, known terms, a paraphrase, or a mix.</p>
@@ -104,7 +104,7 @@
           </aside>
         </section>
 
-        <section data-timing="90">
+        <section data-timing="60">
           <div class="eyebrow">The incident thread</div>
           <h2>One failure, evidence everywhere</h2>
           <div class="incident-thread">
@@ -120,7 +120,7 @@
           </aside>
         </section>
 
-        <section data-timing="90">
+        <section data-timing="60">
           <div class="eyebrow">The search ladder</div>
           <h2>The smallest system that answers the question</h2>
           <ol class="ladder">
@@ -136,7 +136,7 @@
           </aside>
         </section>
 
-        <section data-timing="120">
+        <section data-timing="90">
           <div class="eyebrow">A short history</div>
           <h2>PostgreSQL did not wake up one morning and discover search</h2>
           <div class="timeline">
@@ -154,7 +154,7 @@
           </aside>
         </section>
 
-        <section class="demo-slide" data-timing="180">
+        <section class="demo-slide" data-timing="120">
           <div class="demo-kicker">LIVE DEMO 01 · 2 MIN</div>
           <h2>Exact beats clever</h2>
           <pre><code class="language-bash" data-trim>docker compose run --rm app python -m app.demo search exact PG_53300</code></pre>
@@ -167,7 +167,7 @@
           </aside>
         </section>
 
-        <section class="demo-slide" data-timing="180">
+        <section class="demo-slide" data-timing="120">
           <div class="demo-kicker">LIVE DEMO 02 · 2 MIN</div>
           <h2>Humans type like humans</h2>
           <pre><code class="language-bash" data-trim>docker compose run --rm app python -m app.demo compare \
@@ -200,7 +200,7 @@
           </aside>
         </section>
 
-        <section class="demo-slide" data-timing="240">
+        <section class="demo-slide" data-timing="180">
           <div class="demo-kicker">LIVE DEMO 03 · 3 MIN</div>
           <h2>Ranking changes the answer</h2>
           <pre><code class="language-bash" data-trim>docker compose run --rm app python -m app.demo compare \
@@ -234,7 +234,7 @@
           </aside>
         </section>
 
-        <section class="demo-slide" data-timing="360">
+        <section class="demo-slide" data-timing="300">
           <div class="demo-kicker">LIVE DEMO 04 · 5 MIN</div>
           <h2>Approximate search needs an exact baseline</h2>
           <pre><code class="language-bash" data-trim>docker compose run --rm app python -m app.demo compare \
@@ -251,7 +251,7 @@
           </aside>
         </section>
 
-        <section data-timing="180">
+        <section data-timing="150">
           <div class="eyebrow">ANN physical design</div>
           <h2>The SQL can stay the same while the resource bill changes</h2>
           <table class="tradeoff-table">
@@ -284,7 +284,7 @@
           </aside>
         </section>
 
-        <section class="demo-slide" data-timing="240">
+        <section class="demo-slide" data-timing="180">
           <div class="demo-kicker">LIVE DEMO 05 · 3 MIN</div>
           <h2>Hybrid is where the product gets useful</h2>
           <pre><code class="language-bash" data-trim>docker compose run --rm app python -m app.demo search hybrid \
@@ -335,7 +335,7 @@
           </aside>
         </section>
 
-        <section class="demo-slide" data-timing="300">
+        <section class="demo-slide" data-timing="240">
           <div class="demo-kicker">LIVE DEMO 07 · 4 MIN</div>
           <h2>Where Elasticsearch earns the boundary</h2>
           <pre><code class="language-bash" data-trim>docker compose --profile elastic run --rm app python -m app.demo compare \
@@ -348,13 +348,14 @@
           </div>
           <aside class="notes">
             <p>Elasticsearch is a dedicated retrieval system, not another PostgreSQL access method.</p>
+            <p>The demo runs Elasticsearch BM25 and kNN separately, then performs Reciprocal Rank Fusion in the client so the local comparison works without a licensed native RRF feature.</p>
             <p>Discuss mappings, refresh delay, reconciliation, permissions, backups, and operations before comparing latency.</p>
             <p>A local single-node comparison is not a universal scalability verdict.</p>
             <p>Sources: https://www.elastic.co/docs/solutions/search/hybrid-search, https://www.elastic.co/docs/solutions/search/vector/knn, https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html</p>
           </aside>
         </section>
 
-        <section data-timing="180">
+        <section data-timing="150">
           <div class="eyebrow">The system boundary</div>
           <h2>When a second system pays rent</h2>
           <div class="decision-sides">
@@ -374,7 +375,7 @@
           </aside>
         </section>
 
-        <section class="demo-slide" data-timing="180">
+        <section class="demo-slide" data-timing="120">
           <div class="demo-kicker">LIVE DEMO 08 · 2 MIN</div>
           <h2>Finish with evidence</h2>
           <pre><code class="language-bash" data-trim>docker compose run --rm app python -m app.evaluate --questions 10</code></pre>
@@ -390,7 +391,7 @@
           </aside>
         </section>
 
-        <section class="closing-slide" data-background-color="#F4FF7D" data-state="light-slide" data-timing="150">
+        <section class="closing-slide" data-background-color="#F4FF7D" data-state="light-slide" data-timing="120">
           <div class="eyebrow dark">To sum things up</div>
           <h2>Match the retrieval method to the question</h2>
           <div class="close-rules close-rules-four">
@@ -416,20 +417,24 @@
               <a class="repo-link" href="https://tsdb.co/pgsummit">tsdb.co/pgsummit</a>
               <div class="contact-info">
                 <a href="mailto:erin@tigerdata.com">erin@tigerdata.com</a>
-                <span>staff developer education engineer</span>
+                <span>staff developer experience engineer</span>
                 <a href="https://github.com/erinmikailstaples">github.com/erinmikailstaples</a>
               </div>
             </div>
-            <div class="qr-placeholder" aria-label="QR code placeholder">
-              <span>QR CODE</span>
-              <small>COMING SOON</small>
+            <div class="demo-qr">
+              <img
+                src="./assets/search-cookbook-demo-qr.png"
+                alt="QR code for the Search Cookbook demo"
+              />
+              <a href="https://tsdb.co/7r1y5at2">tsdb.co/7r1y5at2</a>
+              <p>Check it out for yourself!</p>
             </div>
             <p class="closing-thanks">Thank you. May your recall be high and your demo containers already warm.</p>
           </div>
           <aside class="notes">
             <p>Invite the audience to try the repository after the talk. Point out that it contains the corpus, database setup, search implementations, live-demo commands, and evaluation harness.</p>
             <p>Leave the contact details on screen during questions: erin@tigerdata.com and github.com/erinmikailstaples.</p>
-            <p>Point the audience to tsdb.co/pgsummit as the short link for the repository. The QR code is still pending. Replace the placeholder before presenting and test the code from a phone at the venue.</p>
+            <p>Point the audience to tsdb.co/pgsummit for the repository and tsdb.co/7r1y5at2 for the live demo. The QR code opens the demo. Test it from a phone at the venue.</p>
             <p>Close with: Thank you. May your recall be high and your demo containers already warm.</p>
           </aside>
         </section>

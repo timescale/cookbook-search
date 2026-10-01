@@ -1,0 +1,763 @@
+---
+title: Build and compare search methods in PostgreSQL
+description: Build a beginner-friendly incident search demo that compares exact, fuzzy, full-text, BM25, vector, approximate, hybrid, and Elasticsearch retrieval.
+products: [self_hosted]
+keywords: [tutorials, search, beginner, PostgreSQL, BM25, vector search, hybrid search, Elasticsearch]
+pageLabels: [Toolkit]
+---
+
+{/* markdownlint-disable MD033 */}
+{/*
+  This tutorial is an MDX document. It uses the standard tutorial components
+  for prerequisites, numbered procedures, callouts, author information, and
+  related content.
+*/}
+
+import { Callout } from "@stainless-api/docs/components";
+import { NumberedList, NumberedItem } from "@components/NumberedList";
+import { RelatedContentCards, RelatedContentCard } from "@components/RelatedContentCards";
+import { Prerequisites } from "@components/Prerequisites";
+import AuthorByline from "@components/AuthorByline.astro";
+
+{/* markdownlint-disable-next-line MD033 */}
+<AuthorByline
+  name="Erin Mikail Staples"
+  role="Staff Developer Experience Engineer"
+  githubUsername="erinmikail"
+  email="erin@erinmikailstaples.com"
+  linkedinUrl="https://www.linkedin.com/in/erinmikail/"
+/>
+
+## Overview
+
+In this tutorial, you build an incident-search environment and run the same
+corpus through several search methods. It is written for developers who are
+new to search and want to understand what each method is doing, not just copy
+commands. The finished demo uses one search box to answer several kinds of
+questions: exact identifiers, misspelled phrases, keyword queries, paraphrased
+questions, and queries that mix keywords with broader meaning.
+
+This tutorial assumes that you have basic knowledge of:
+
+- running commands in a terminal;
+- editing a text file; and
+- using Docker to run local services.
+
+You do not need previous experience with search engines, PostgreSQL search,
+embeddings, or vector indexes. Each of those ideas is introduced before you
+use it.
+
+By the end, you'll be able to:
+
+- explain the difference between exact, fuzzy, lexical, semantic, approximate,
+  and hybrid search;
+- prepare one searchable corpus in PostgreSQL and inspect the available search
+  extensions and indexes;
+- compare result quality and client-observed latency across search methods;
+- use exact vector search as a reference for approximate nearest-neighbor
+  indexes; and
+- describe when adding Elasticsearch is useful and what operational cost it
+  introduces.
+
+<Callout variant="warning">
+  The embedding step sends text to the OpenAI API and can incur usage charges.
+  Begin with the `sample` dataset profile, review your API account limits, and
+  never commit your `.env` file or API key.
+</Callout>
+
+## Background
+
+Search is not one algorithm. The correct method depends on what the user knows
+and what a useful match means:
+
+- **Exact search** compares a known value, such as an error code, ID, status,
+  or date, with a structured database field.
+- **Fuzzy search** compares character patterns so a misspelling or partial
+  value can still return a useful result.
+- **Lexical search** finds and ranks documents using the words in the query.
+  PostgreSQL full-text search and BM25 are both lexical methods, but they rank
+  matches differently.
+- **Semantic search** represents text as numeric vectors called embeddings.
+  Nearby vectors indicate similar meaning, even when the query and document
+  use different words.
+- **Approximate nearest-neighbor (ANN) search** avoids comparing a query with
+  every vector. It trades some recall for faster retrieval on large datasets.
+- **Hybrid search** combines results from lexical and semantic methods. This
+  tutorial uses Reciprocal Rank Fusion (RRF), which combines result positions
+  instead of trying to compare incompatible raw scores.
+
+The data in this tutorial is a deterministic, synthetic incident history for a
+fictional ecommerce platform. It includes events, deployments, runbooks,
+postmortems, issues, and labeled questions. Every method searches the same
+underlying incident material, which makes the comparison easier to understand.
+
+## What is the tech stack we're working with?
+
+**PostgreSQL and TimescaleDB:** PostgreSQL stores the source records and the
+searchable corpus. The local database image also includes TimescaleDB and the
+extensions used for text and vector retrieval. Keeping search next to
+transactional data makes it possible to combine relevance with SQL filters,
+joins, and access rules.
+
+This tutorial uses Docker Compose because the supplied image pins a compatible
+PostgreSQL and extension environment. Managed and manual installations can
+support the same concepts, but their setup commands and available extension
+versions differ from the verified path documented here.
+
+- **pg_trgm** provides character-trigram similarity for fuzzy matching.
+- **PostgreSQL full-text search** provides tokenization, stemming, query
+  operators, and text ranking.
+- **pg_textsearch** provides BM25 keyword ranking.
+- **pgvector** provides vector storage, exact vector search, HNSW, and IVFFlat.
+- **pgvectorscale** provides StreamingDiskANN.
+- **OpenAI `text-embedding-3-small`** converts text into 1,536-dimensional
+  embeddings for semantic search.
+- **Python** generates data, prepares the database, runs searches, and evaluates
+  labeled questions.
+- **Streamlit** displays search methods and results side by side.
+- **Elasticsearch** is an optional second retrieval system used to demonstrate
+  the benefits and operational tradeoffs of copying data out of PostgreSQL.
+
+<Prerequisites>
+- [Docker Desktop](https://www.docker.com/get-started/) or another Docker engine with Docker Compose and BuildKit
+- Git and a terminal application
+- An [OpenAI API key](https://platform.openai.com/api-keys) for document and query embeddings
+- At least 4 GB of memory available to Docker for the PostgreSQL-only sample
+- At least 6 GB of memory available to Docker if you also run Elasticsearch
+- A local copy of this repository, with your terminal opened in its root directory
+
+  **Optional:** Elasticsearch is needed only for the dedicated-search-engine comparison. You can complete the PostgreSQL portion without it.
+</Prerequisites>
+
+## Build and compare the search methods
+
+<NumberedList>
+  <NumberedItem title="Configure the tutorial environment">
+
+Move into the tutorial directory and create a local environment file from the
+committed example:
+
+**Create the local environment file:**
+
+```bash
+cd State-of-Search
+cp .env.example .env
+```
+
+Open `.env` in a text editor and set these values:
+
+**Set the required environment values:**
+
+```dotenv
+OPENAI_API_KEY=your-key-here
+DATASET_PROFILE=sample
+```
+
+**What this configures:** `OPENAI_API_KEY` authorizes embedding requests.
+`DATASET_PROFILE` controls how much synthetic data the generator creates. The
+`sample` profile creates 5,000 events and is intended for learning and setup
+checks. The `demo` and `benchmark` profiles require more preparation time,
+storage, memory, and API usage.
+
+**Verify this step:** Confirm that `State-of-Search/.env` exists and that the
+API key does not still contain the placeholder `your-key-here`. Do not print
+the key in your terminal or commit the file to Git.
+
+With the configuration in place, you can build the reproducible services used
+by every later step.
+
+  </NumberedItem>
+
+  <NumberedItem title="Build and start the PostgreSQL service">
+
+Build the database and application images, then start only the database:
+
+**Build the images and start PostgreSQL:**
+
+```bash
+docker compose build db app
+docker compose up -d --wait db
+```
+
+**What is running:** Docker builds a PostgreSQL 18 image containing TimescaleDB
+and the search extensions, plus a Python application image containing the data
+generator and demo commands. The second command starts PostgreSQL and waits for
+its health check to pass. The application UI is not started yet.
+
+**Verify this step:** The final Compose output should report that the `db`
+service is healthy. You can also run:
+
+**Check the container status:**
+
+```bash
+docker compose ps
+```
+
+Look for the `db` service with a status containing `healthy`. If it is still
+starting, wait a few seconds and run the command again. If it exited, inspect
+its logs with `docker compose logs db` before continuing.
+
+Now that PostgreSQL accepts connections, prepare its extensions and confirm
+which search methods the image can run.
+
+  </NumberedItem>
+
+  <NumberedItem title="Create the database extensions and inspect capabilities">
+
+Create the required extensions and schema, then ask the preparation tool to
+report what the environment supports:
+
+**Create the schema and inspect search capabilities:**
+
+```bash
+docker compose run --rm app python -m app.prepare setup
+docker compose run --rm app python -m app.prepare doctor
+```
+
+**What is running:** `setup` connects to PostgreSQL, enables the required and
+optional extensions, and creates the tables. `doctor` reads the server version,
+installed extensions, available index access methods, and corpus counts. It
+does not run a search.
+
+The output has this general shape; exact versions and ordering can differ:
+
+**Expected capability report:**
+
+```text
+PostgreSQL 18.x ...
+Extensions: pg_trgm=..., pg_textsearch=..., timescaledb=..., vector=..., vectorscale=...
+Search access methods: bm25, diskann, hnsw, ivfflat
+Corpus: 0 rows; 0 embedded
+```
+
+**Verify this step:** Confirm that the output lists `vector` and `pg_trgm`.
+The search access methods should include `bm25`, `hnsw`, `ivfflat`, and
+`diskann` when all optional extensions are available. A missing optional method
+is reported explicitly and remains disabled in the demo; it is not silently
+replaced by another algorithm. A corpus count of zero is expected because you
+have not loaded data yet.
+
+The empty but capable database is ready for the tutorial's incident records.
+
+  </NumberedItem>
+
+  <NumberedItem title="Generate and load the incident corpus">
+
+Generate deterministic CSV files from the committed seed data and load them
+into PostgreSQL:
+
+**Generate and load the sample data:**
+
+```bash
+docker compose run --rm app python -m app.prepare generate
+docker compose run --rm app python -m app.prepare load
+```
+
+**What is running:** `generate` creates events, deployments, documents, and
+labeled questions in a Docker volume. `load` resets the tutorial tables, copies
+the CSV records into source tables, builds one `search_items` corpus from the
+events and documents, and creates the relational and lexical indexes. Running
+`load` again replaces the prepared corpus.
+
+Expected progress messages look like this:
+
+**Expected preparation output:**
+
+```text
+Generating deterministic sample corpus in /workspace/data
+Loaded ... searchable rows
+```
+
+Inspect how many event and document rows entered the search corpus:
+
+**Count rows by source type:**
+
+```bash
+docker compose exec db psql -U postgres -d state_of_search -P pager=off -c \
+  "SELECT source_kind, count(*) FROM search_items GROUP BY source_kind ORDER BY source_kind"
+```
+
+**Verify this step:** The SQL output should contain separate `document` and
+`event` rows with nonzero counts. These are two source types searched through
+the same `search_items` table.
+
+The dataset is generated from this repository's synthetic seed files and is
+covered by the repository's Apache 2.0 license; it does not reproduce a
+third-party incident dataset. With rows loaded, begin with the simplest and
+most precise form of search.
+
+  </NumberedItem>
+
+  <NumberedItem title="Run an exact lookup">
+
+Use an error code to retrieve rows by equality and ask PostgreSQL to show the
+query plan:
+
+**Run the exact error-code lookup:**
+
+```bash
+docker compose exec db psql -U postgres -d state_of_search -P pager=off -c \
+  "EXPLAIN (ANALYZE, BUFFERS) SELECT id, service, incident_id, content FROM search_items WHERE error_code = 'PG_53300'"
+```
+
+**What is running:** PostgreSQL compares `PG_53300` with the structured
+`error_code` column. `EXPLAIN (ANALYZE, BUFFERS)` executes the query and reports
+the plan, measured execution time, and buffer activity. This is a database
+lookup, not full-text or AI search, and it does not create an embedding.
+
+**Verify this step:** Look for an index-based operation in the plan and one or
+more rows associated with the error code. The exact timing depends on your
+machine and is not a benchmark. Exact indexes are usually the right starting
+point for IDs, codes, ranges, statuses, and selective filters.
+
+**What exact search is good at:** Known values that must match a structured
+field precisely, with predictable behavior and efficient database indexes.
+
+**Where it falls short:** It cannot recover a misspelling or recognize related
+language. The next step deliberately misspells a phrase to demonstrate that
+gap.
+
+  </NumberedItem>
+
+  <NumberedItem title="Recover a misspelled query with trigram search">
+
+Search for a deliberately misspelled phrase:
+
+**Run the trigram similarity search:**
+
+```bash
+docker compose run --rm app python -m app.demo search trigram "conection pool exaustion"
+```
+
+**What is running:** `pg_trgm` breaks the query and searchable text into
+overlapping three-character groups, then ranks rows by how many groups they
+share. This helps with misspelled names, partial identifiers, autocomplete
+candidates, and `LIKE` or `ILIKE` patterns. It does not understand meaning.
+
+The command explains the score before printing results:
+
+**Expected method explanation:**
+
+```text
+Method: Trigram similarity [trigram]
+  What is running: Breaks text into overlapping three-character pieces so misspellings can still match.
+  How to read the score: Higher scores mean the query and result share more three-character pieces.
+```
+
+**Verify this step:** Confirm that the command returns results even though
+`connection` and `exhaustion` are misspelled. Inspect the titles and incident
+families instead of judging the method by latency alone.
+
+**What trigram search is good at:** Misspellings, partial strings, names,
+identifiers, and autocomplete candidates that share characters.
+
+**Where it falls short:** Character overlap does not represent meaning or
+document relevance. Next, compare methods designed to rank matching words.
+
+  </NumberedItem>
+
+  <NumberedItem title="Compare full-text search with BM25 ranking">
+
+Send the same keyword query to PostgreSQL full-text search and BM25:
+
+**Compare the two lexical methods:**
+
+```bash
+docker compose run --rm app python -m app.demo compare \
+  "too many clients already" fts bm25
+```
+
+**What is running:** Full-text search normalizes words, applies an English text
+search configuration, matches a `tsquery` against stored `tsvector` values, and
+ranks matches with `ts_rank_cd`. BM25 also uses words, but its ranking accounts
+for term rarity, repeated terms, and document length.
+
+**Verify this step:** The output should contain one result block labeled
+`PostgreSQL full-text search [fts]` and another labeled `BM25 keyword ranking
+[bm25]`. Compare which documents and incident families appear near the top.
+Do not compare the raw score numbers: each method uses a different scale, and a
+higher BM25 score does not prove that BM25 outperformed full-text search.
+
+**What lexical search is good at:** Queries containing important words that
+also appear in documents, including error messages, product names, and
+technical phrases.
+
+**Where it falls short:** A relevant document can use different words from the
+query. Embeddings provide a way to retrieve by meaning in the next steps.
+
+  </NumberedItem>
+
+  <NumberedItem title="Create embeddings and build vector indexes">
+
+Create an embedding for the title and content of each searchable row:
+
+**Generate document embeddings:**
+
+```bash
+docker compose run --rm app python -m app.prepare embed
+```
+
+**What is running:** The application sends batches of `title + content` text to
+OpenAI's `text-embedding-3-small` model. It stores each returned
+1,536-dimensional vector in PostgreSQL and copies the vector into method-specific
+tables used to select HNSW, IVFFlat, or StreamingDiskANN deterministically.
+Completed rows are skipped, so an interrupted embedding run can continue.
+
+Progress appears as a growing count:
+
+**Expected embedding progress:**
+
+```text
+Embedded 100 rows
+Embedded 200 rows
+...
+Embeddings complete with text-embedding-3-small
+```
+
+Build the vector indexes and inspect the completed environment:
+
+**Build and verify the vector indexes:**
+
+```bash
+docker compose run --rm app python -m app.prepare index
+docker compose run --rm app python -m app.prepare doctor
+```
+
+**Verify this step:** `doctor` should report equal, nonzero corpus and embedded
+counts. If the embedded count is smaller, rerun the embedding command. Do not
+run `load` at this point unless you intend to reset the corpus and remove its
+stored embeddings.
+
+If every vector method returns `Results returned: 0`, run `doctor` and inspect
+the embedded count and vector-table counts. A nonzero corpus with `0 embedded`
+means the text rows loaded successfully, but document embeddings have not been
+prepared or a later `load` command reset them. Run `embed` and then `index`
+again before repeating the vector comparison.
+
+The corpus now has numeric representations of meaning. Start with exhaustive
+vector comparison so you have a trustworthy reference result.
+
+  </NumberedItem>
+
+  <NumberedItem title="Establish an exact vector-search reference">
+
+Run a semantic query whose wording differs from the likely source text:
+
+**Run exact semantic retrieval:**
+
+```bash
+docker compose run --rm app python -m app.demo search vector_exact \
+  "why does checkout keep losing database capacity"
+```
+
+**What is running:** The application creates or retrieves a cached embedding
+for the query. PostgreSQL then compares it with every stored embedding using
+cosine distance and returns the closest meanings. Index scans are disabled for
+this method so the result represents exact nearest-neighbor search.
+
+**Verify this step:** Look for checkout or database-capacity incident material
+near the top even when the source does not repeat the query word for word. The
+displayed score is cosine similarity: higher is closer in this result set. Use
+these rows as the reference when evaluating approximate indexes in the next
+step.
+
+**What exact vector search is good at:** Semantic retrieval over a small or
+strongly filtered corpus, and ground-truth comparison for ANN methods.
+
+**Where it falls short:** It scores every eligible vector, so work grows with
+the corpus. Approximate indexes reduce that work at the cost of possible
+misses.
+
+  </NumberedItem>
+
+  <NumberedItem title="Compare approximate vector indexes">
+
+Run the exact reference and three ANN methods with the same query:
+
+**Compare exact and approximate vector retrieval:**
+
+```bash
+docker compose run --rm app python -m app.demo compare \
+  "why does checkout keep losing database capacity" \
+  vector_exact hnsw ivfflat diskann
+```
+
+**What is running:**
+
+- **HNSW** traverses a graph of nearby vectors.
+- **IVFFlat** searches selected clusters instead of the whole corpus.
+- **StreamingDiskANN** uses a disk-oriented graph and rescoring controls.
+- **Exact vector search** scores every eligible vector and provides the
+  comparison baseline.
+
+**Verify this step:** Compare the identities and ordering of the returned rows,
+not just the milliseconds. If an ANN method omits a row returned by exact
+search, you are observing its recall tradeoff. The `sample` corpus is too small
+for meaningful performance conclusions; use a larger profile and repeated
+trials before making production claims.
+
+**What ANN search is good at:** Low-latency semantic candidate retrieval when
+the corpus is too large to compare every vector for every query.
+
+**Where it falls short:** Results depend on index choice and tuning, and can
+omit neighbors returned by exact search. Hybrid retrieval addresses a
+different weakness by restoring strong keyword signals.
+
+  </NumberedItem>
+
+  <NumberedItem title="Combine keyword and semantic results">
+
+Run a query containing both literal technical terms and broader incident
+meaning:
+
+**Run the hybrid search:**
+
+```bash
+docker compose run --rm app python -m app.demo search hybrid \
+  "payments deploy saturated postgres max_connections"
+```
+
+**What is running:** The hybrid method retrieves 40 BM25 keyword candidates
+and 40 HNSW semantic candidates. It converts each candidate's position to
+`1 / (60 + rank)`, adds the values when a row appears in both lists, and
+returns the ten highest fused scores. This method is called Reciprocal Rank
+Fusion (RRF).
+
+**Verify this step:** Strong results should use literal clues such as
+`max_connections` while remaining related to payments, deployments, or
+database saturation. The RRF score is a ranking signal, not a probability or
+confidence percentage.
+
+<Callout variant="tip">
+  A production hybrid query must also apply authorization, tenant, time,
+  service, region, and status rules. Applying filters before, during, or after
+  ANN candidate generation can change both latency and recall.
+</Callout>
+
+**What hybrid search is good at:** Mixed queries that contain exact product or
+technical terms alongside natural-language intent.
+
+**Where it falls short:** Fusion adds query work and tuning choices, and it
+does not replace authorization or business filters. The guided tour makes
+these distinctions visible across all five query types.
+
+  </NumberedItem>
+
+  <NumberedItem title="Run the guided tour and web interface">
+
+Run all five teaching scenarios in sequence, then start the Streamlit app:
+
+**Run the tour and start the web application:**
+
+```bash
+docker compose run --rm app python -m app.demo tour
+docker compose up -d app
+```
+
+**What is running:** The terminal tour moves from exact lookup to typo
+tolerance, lexical ranking, semantic retrieval, and hybrid retrieval. Each
+stage prints its goal, query, active methods, unavailable optional methods,
+score guidance, and the result characteristic to inspect. The second command
+starts the browser interface on port 8501.
+
+A stage begins like this; timings and result rows vary by machine:
+
+**Expected guided-tour context:**
+
+```text
+STEP 2 OF 5: Typo tolerance
+Goal: See how character similarity helps when a person misspells important words.
+Query being searched: 'conection pool exaustion'
+Methods being compared: trigram, fts
+What to look for: Trigram search can recover the intended topic; full-text search
+may struggle because the misspelled words are different tokens.
+```
+
+Open <http://127.0.0.1:8501> and submit the default query. The page displays
+only methods that the running environment reports as available.
+
+**Verify this step:** Confirm that the terminal completes all five stages and
+that the browser displays side-by-side result columns. A method's displayed
+time includes retrieval and client round-trip overhead. Query-embedding
+creation occurs before the semantic retrieval timer. Treat the values as local
+observations, not universal benchmark results.
+
+The PostgreSQL comparison is complete. Continue only if you want to see the
+additional operational boundary created by a dedicated search engine.
+
+  </NumberedItem>
+
+  <NumberedItem title="Add the optional Elasticsearch comparison">
+
+Start Elasticsearch and copy the prepared PostgreSQL corpus and embeddings
+into an Elasticsearch index:
+
+**Start and populate Elasticsearch:**
+
+```bash
+docker compose --profile elastic up -d --wait elasticsearch
+docker compose --profile elastic run --rm prepare python -m app.prepare elastic
+```
+
+Compare PostgreSQL and Elasticsearch over the same source rows:
+
+**Compare both retrieval systems:**
+
+```bash
+docker compose --profile elastic run --rm app python -m app.demo compare \
+  "payments deploy saturated postgres max_connections" \
+  bm25 hybrid elastic_bm25 elastic_hybrid
+```
+
+**What is running:** The preparation command creates an Elasticsearch mapping
+and copies text, metadata, incident-family labels, and vectors from PostgreSQL.
+The comparison then runs BM25 and hybrid retrieval in both systems. For the
+Elasticsearch hybrid method, the demo requests BM25 and kNN candidates
+separately and performs RRF over their rank positions in the Python client.
+This avoids requiring Elasticsearch's licensed native RRF retriever. The demo
+still compares retrieval systems over the same data and embedding model.
+
+**Verify this step:** Look for `elastic_bm25` and `elastic_hybrid` result
+blocks. Compare result order and content rather than raw cross-system scores.
+Remember that Elasticsearch is now a second copy of the data that must be
+mapped, refreshed, reconciled, secured, backed up, monitored, and upgraded.
+
+<Callout variant="warning">
+  The local Elasticsearch service disables security and runs as one node. It
+  is a learning environment, not a production deployment.
+</Callout>
+
+Adding a second system is an architectural decision, so the next step measures
+relevance over labeled questions instead of relying on one attractive example.
+
+  </NumberedItem>
+
+  <NumberedItem title="Evaluate retrieval against labeled questions">
+
+Begin with ten questions because semantic queries may create and cache new
+query embeddings:
+
+**Run a short evaluation:**
+
+```bash
+docker compose run --rm app python -m app.evaluate --questions 10
+```
+
+After the short run succeeds, evaluate the full labeled set:
+
+**Run the complete evaluation:**
+
+```bash
+docker compose run --rm app python -m app.evaluate
+```
+
+**What is running:** For each labeled question, the evaluator checks whether
+the expected incident family appears in the first ten results. It reports
+Recall@10 and mean client-observed latency by query kind, then writes detailed
+rows to `results/evaluation.csv`.
+
+**Verify this step:** Confirm that the terminal prints a summary for each query
+kind and that `State-of-Search/results/evaluation.csv` exists. Recall@10 answers
+“How often did at least one expected incident-family result appear in the top
+ten?” It does not measure how good every ranking position was. A production
+evaluation can add MRR, NDCG, repeated latency trials, index size, build time,
+and filtered-recall experiments.
+
+You now have qualitative examples and a repeatable relevance check. The final
+step shuts down the environment without accidentally deleting data you intend
+to reuse.
+
+  </NumberedItem>
+
+  <NumberedItem title="Stop the services and choose whether to keep the data">
+
+Stop PostgreSQL, the app, and optional Elasticsearch service while preserving
+their Docker volumes:
+
+**Stop services and keep generated data:**
+
+```bash
+docker compose --profile elastic down
+```
+
+Use this version when you want a later `docker compose up` to reuse the
+prepared database and Elasticsearch index.
+
+To stop the services **and permanently delete the generated Docker volumes**,
+run:
+
+**Stop services and delete generated data:**
+
+```bash
+docker compose --profile elastic down --volumes
+```
+
+**Verify this step:** `docker compose ps` should show no running services for
+this project. The `--volumes` form removes generated corpus files, database
+rows, stored embeddings, and the Elasticsearch index. Those artifacts can be
+regenerated from the committed seeds, but any associated API requests must be
+made again. Neither command deletes repository files or your local `.env` file.
+
+  </NumberedItem>
+</NumberedList>
+
+## Summary
+
+In this tutorial, you learned how to:
+
+- choose exact lookup, typo tolerance, lexical ranking, semantic retrieval, or
+  hybrid retrieval based on the question being asked;
+- generate one incident corpus and search it with PostgreSQL relational
+  indexes, `pg_trgm`, full-text search, BM25, pgvector, HNSW, IVFFlat, and
+  StreamingDiskANN;
+- interpret method-specific scores without comparing incompatible numeric
+  scales;
+- evaluate ANN output against exact vector results and labeled questions;
+- use RRF to combine keyword and semantic rankings; and
+- compare PostgreSQL with an optional Elasticsearch copy while accounting for
+  the operational cost of a second system.
+
+## Next steps
+
+Continue with the supporting material or explore the underlying search
+features in more depth.
+
+### Learn more
+
+<RelatedContentCards>
+  <RelatedContentCard
+    title="PostgreSQL full-text search"
+    description="Learn how PostgreSQL parses, matches, and ranks searchable text."
+    href="https://www.postgresql.org/docs/current/textsearch.html"
+  />
+  <RelatedContentCard
+    title="pgvector"
+    description="Explore vector storage, distance operators, exact search, HNSW, and IVFFlat."
+    href="https://github.com/pgvector/pgvector"
+  />
+  <RelatedContentCard
+    title="Elasticsearch hybrid search"
+    description="Review Elasticsearch options for combining lexical and vector retrieval."
+    href="https://www.elastic.co/docs/solutions/search/hybrid-search"
+  />
+</RelatedContentCards>
+
+### Other examples
+
+<RelatedContentCards>
+  <RelatedContentCard
+    title="Hybrid search cookbook"
+    description="Build a focused BM25 and vector-search example with Reciprocal Rank Fusion."
+    href="../Hybrid-search/README.md"
+  />
+  <RelatedContentCard
+    title="State of Search demo plan"
+    description="Rehearse the live demonstration, timing, and recovery paths."
+    href="./02_demo-plan.md"
+  />
+  <RelatedContentCard
+    title="State of Search talk track"
+    description="Read the complete narrative and explanation behind the demo."
+    href="./03_talk-track.md"
+  />
+</RelatedContentCards>

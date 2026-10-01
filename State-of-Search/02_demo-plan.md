@@ -1,6 +1,6 @@
 # Demo Plan and Presenter Runbook
 
-This is the short live version of the 50-minute talk. Target runtime: 21–24
+This is the live sequence inside the 50-minute talk. Target runtime: 24
 minutes. Keep the Streamlit comparison UI and Reflex command center open, with
 a terminal ready as the reliable control surface.
 
@@ -25,26 +25,55 @@ docker compose --profile elastic up -d --wait elasticsearch
 docker compose --profile elastic run --rm prepare python -m app.prepare elastic
 ```
 
-Prepare the companion on-call interface in a second terminal after completing
-the Incident Search setup:
+Keep the first terminal in `State-of-Search/`. After the Incident Search setup
+finishes, open a second terminal for the separately cloned companion on-call
+repository, build the dashboard image, and wait for its services to become
+healthy:
 
 ```bash
-cd ../Incident-search
+cd /path/to/Incident-search
 docker compose --profile dashboard build dashboard
 docker compose --profile dashboard up -d --wait
 ```
 
-Before walking on stage:
+Verify the companion stack from the same second terminal:
 
-- Confirm Docker has enough memory and no pending update.
-- Confirm `doctor` reports the expected access methods.
-- Open <http://127.0.0.1:8501> and run one comparison.
-- Prepare the companion Reflex app from `../Incident-search`, open
-  <http://127.0.0.1:3000>, and select a representative incident.
-- Run the terminal tour once to warm caches.
-- Save `results/evaluation.csv` and capture a screenshot as backup.
-- Disable notifications and close unrelated terminals containing secrets.
-- Do not display `.env` or the OpenAI API key.
+```bash
+docker compose --profile dashboard ps
+```
+
+The dashboard service should be running and healthy before you open
+<http://127.0.0.1:3000>. If it is not, inspect it with
+`docker compose --profile dashboard logs dashboard` before rehearsing.
+
+Before walking on stage, complete these checks in order:
+
+1. Confirm Docker has enough memory for both projects and is not waiting for an
+   update or restart.
+2. In the `State-of-Search/` terminal, confirm `doctor` reports the expected
+   `bm25`, `hnsw`, `ivfflat`, and `diskann` access methods:
+
+   ```bash
+   docker compose run --rm app python -m app.prepare doctor
+   ```
+
+3. Open <http://127.0.0.1:8501>, submit the default query, and confirm that the
+   expected comparison columns contain results.
+4. In the companion app at <http://127.0.0.1:3000>, select the database-pool or
+   payment-related incident that you will use in Scene 6. Leave that incident
+   open so the demo starts from known state.
+5. In the `State-of-Search/` terminal, run the complete tour once to populate
+   query-embedding and database caches:
+
+   ```bash
+   docker compose run --rm app python -m app.demo tour
+   ```
+
+6. Confirm that `results/evaluation.csv` exists and save a screenshot of the
+   comparison UI or evaluation output as a no-network backup.
+7. Disable desktop and phone notifications. Close unrelated browser tabs and
+   terminals, especially any terminal displaying `.env`, an OpenAI API key, or
+   other credentials.
 
 ## Scene 1 — exact beats clever (2 minutes)
 
@@ -137,6 +166,9 @@ Postgres source row
 ```
 
 Discuss mapping, refresh, reconciliation, permissions, backups, and operations.
+The demo runs Elasticsearch BM25 and kNN separately and fuses their positions
+in the Python client, avoiding a dependency on the licensed native RRF
+retriever.
 Avoid presenting a local single-node latency comparison as a product benchmark.
 
 ## Scene 8 — finish with evidence (2 minutes)

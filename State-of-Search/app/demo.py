@@ -70,7 +70,7 @@ METHOD_CONTEXT = {
     ),
     "elastic_hybrid": (
         "Elasticsearch hybrid search",
-        "Combines Elasticsearch BM25 and vector candidates with Reciprocal Rank Fusion (RRF).",
+        "Runs Elasticsearch BM25 and vector candidate searches, then combines their rank positions with RRF in the demo client.",
         "Higher fused scores are better, but they are ranking signals rather "
         "than confidence percentages.",
     ),

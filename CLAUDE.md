@@ -24,7 +24,7 @@ cookbook-search/
     ├── sql/                  # Schema and index definitions
     ├── slides/               # Reveal.js presentation
     ├── compose.yaml          # PostgreSQL, app, and optional Elasticsearch
-    └── 00_tutorial.md        # Detailed workshop tutorial
+    └── 00_tutorial.mdx       # Detailed workshop tutorial
 ```
 
 ## Skills

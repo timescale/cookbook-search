@@ -46,7 +46,12 @@ def capabilities() -> dict[str, bool]:
     result = postgres_capabilities()
     elastic = False
     try:
-        elastic = bool(Elasticsearch(ELASTIC_URL, request_timeout=2).ping())
+        es = Elasticsearch(ELASTIC_URL, request_timeout=2)
+        elastic = bool(
+            es.ping()
+            and es.indices.exists(index="incident-search")
+            and es.count(index="incident-search")["count"]
+        )
     except Exception:
         pass
     result.update({
@@ -92,6 +97,31 @@ def _rows(cur) -> list[dict[str, Any]]:
     return [dict(row) for row in cur.fetchall()]
 
 
+def _vector_readiness_note(method: str) -> str:
+    table = {
+        "hnsw": "vectors_hnsw",
+        "ivfflat": "vectors_ivfflat",
+        "diskann": "vectors_diskann",
+        "hybrid": "vectors_hnsw",
+    }.get(method)
+    with connect() as conn, conn.cursor() as cur:
+        if table:
+            cur.execute(f"SELECT count(*) AS ready FROM {table}")
+        else:
+            cur.execute(
+                "SELECT count(*) AS ready FROM search_items WHERE embedding IS NOT NULL"
+            )
+        ready = cur.fetchone()["ready"]
+    if ready:
+        return ""
+    return (
+        "No document embeddings are prepared for this method. Run "
+        "`docker compose run --rm app python -m app.prepare embed`, then "
+        "`docker compose run --rm app python -m app.prepare index`. "
+        "Running the load step again resets stored embeddings."
+    )
+
+
 def postgres_search(method: str, query: str, limit: int = 10) -> SearchResult:
     available = postgres_capabilities()
     if not available.get(method, False):
@@ -99,6 +129,9 @@ def postgres_search(method: str, query: str, limit: int = 10) -> SearchResult:
 
     vector = None
     if method in {"vector_exact", "hnsw", "ivfflat", "diskann", "hybrid"}:
+        readiness_note = _vector_readiness_note(method)
+        if readiness_note:
+            return SearchResult(method, 0, [], readiness_note)
         vector = query_embedding(query)
 
     started = time.perf_counter()
@@ -134,7 +167,7 @@ def postgres_search(method: str, query: str, limit: int = 10) -> SearchResult:
                        ts_rank_cd(content_tsv, websearch_to_tsquery('english', %s)) AS score
                 FROM search_items
                 WHERE content_tsv @@ websearch_to_tsquery('english', %s)
-                ORDER BY score DESC LIMIT %s
+                ORDER BY score DESC, occurred_at DESC NULLS LAST, id LIMIT %s
                 """,
                 (query, query, limit),
             )
@@ -243,20 +276,39 @@ def elastic_search(method: str, query: str, limit: int = 10) -> SearchResult:
             knn={"field": "embedding", "query_vector": vector, "k": limit, "num_candidates": max(100, limit * 10)},
         )
     elif method == "elastic_hybrid":
-        response = es.search(
+        rank_window = 40
+        rank_constant = 60
+        keyword_response = es.search(
             index="incident-search",
-            size=limit,
-            retriever={
-                "rrf": {
-                    "retrievers": [
-                        {"standard": {"query": {"multi_match": {"query": query, "fields": ["title^2", "content"]}}}},
-                        {"knn": {"field": "embedding", "query_vector": vector, "k": 40, "num_candidates": 100}},
-                    ],
-                    "rank_window_size": 40,
-                    "rank_constant": 60,
-                }
+            size=rank_window,
+            query={"multi_match": {"query": query, "fields": ["title^2", "content"]}},
+        )
+        semantic_response = es.search(
+            index="incident-search",
+            size=rank_window,
+            knn={
+                "field": "embedding",
+                "query_vector": vector,
+                "k": rank_window,
+                "num_candidates": 100,
             },
         )
+        fused: dict[str, float] = {}
+        sources: dict[str, dict[str, Any]] = {}
+        for candidate_response in (keyword_response, semantic_response):
+            for rank, hit in enumerate(candidate_response["hits"]["hits"], 1):
+                hit_id = hit["_id"]
+                fused[hit_id] = fused.get(hit_id, 0.0) + 1.0 / (rank_constant + rank)
+                sources[hit_id] = hit["_source"]
+        rows = []
+        for hit_id, score in sorted(fused.items(), key=lambda item: (-item[1], item[0]))[:limit]:
+            source = dict(sources[hit_id])
+            source["id"] = hit_id
+            source["score"] = score
+            source.pop("embedding", None)
+            rows.append(source)
+        elapsed = (time.perf_counter() - started) * 1000
+        return SearchResult(method, elapsed, rows)
     else:
         raise ValueError(f"Unknown Elasticsearch method: {method}")
     rows = []
