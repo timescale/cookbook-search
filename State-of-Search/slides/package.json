@@ -1,0 +1,17 @@
+{
+  "name": "state-of-search-reveal-deck",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "reveal.js": "6.0.2"
+  },
+  "devDependencies": {
+    "vite": "8.3.2"
+  }
+}

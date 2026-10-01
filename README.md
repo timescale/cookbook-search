@@ -1,77 +1,117 @@
 # Tiger Data Search Cookbook
 
-A collection of cookbooks, tutorials, and reference implementations showcasing the different search capabilities available within **Tiger Data** and **PostgreSQL**.
+Practical tutorials and demos for building search with Tiger Data and
+PostgreSQL. Each project explains the retrieval techniques it uses, includes
+runnable examples, and documents where PostgreSQL-native search fits compared
+with a dedicated search engine.
 
-## What's Inside
+## Projects
 
-Each folder contains a self-contained cookbook focused on a specific search approach, complete with example queries, schema setup, and explanations of when and why you'd reach for that technique.
+| Project | Best for | What it covers |
+|---|---|---|
+| [Hybrid Search](./Hybrid-search/) | A focused, beginner-friendly tutorial | BM25 keyword search, vector similarity, and Reciprocal Rank Fusion (RRF) with `pg_textsearch` and `pgvectorscale`. |
+| [State of Search](./State-of-Search/) | An advanced demo, presentation, and evaluation harness | Exact lookup, fuzzy matching, PostgreSQL full-text search, BM25, exact and approximate vector search, hybrid retrieval, and an optional Elasticsearch comparison. |
 
-| Cookbook | Description |
-|---------|-------------|
-| [Hybrid Search](./Hybrid-search/) | Combining BM25 keyword search with vector similarity search using pg_textsearch and pgvectorscale, fused with Reciprocal Rank Fusion (RRF) |
+## Choose a starting point
 
-## Who This Is For
+### Hybrid Search
 
-- Developers building search features on Tiger Data or PostgreSQL
-- Teams evaluating which search approach fits their use case
-- Anyone curious about what's possible with search in Postgres
+Choose this project if you want the shortest path to a working hybrid-search
+example. It includes a small attributed dataset, one SQL setup file, and one
+Python embedding script.
 
-## Prerequisites
+Start with the [Hybrid Search tutorial](./Hybrid-search/README.md).
 
-Before diving into any cookbook, make sure you have the following:
+### State of Search
 
-- **PostgreSQL 17 or 18** — via [Tiger Cloud](https://console.cloud.timescale.com), [Docker](https://github.com/timescale/timescaledb-docker-ha), or a [local install](https://www.postgresql.org/download/)
-- **Docker** — required for local development without a manual PostgreSQL install. Get it at [docker.com/get-started](https://www.docker.com/get-started/)
-- **Tiger CLI** *(optional)* — manage Tiger Cloud services from the terminal or integrate with AI assistants via [Tiger MCP](https://www.tigerdata.com/docs/get-started/quickstart/mcp-cli). Install with `brew install --cask timescale/tap/tiger-cli` (macOS) or see the [CLI docs](https://www.tigerdata.com/docs/get-started/quickstart/cli-rest-api)
-- **Python 3.9+** — [python.org/downloads](https://www.python.org/downloads/)
-- **A Python package manager** — we use [uv](https://docs.astral.sh/uv/) in the tutorials, but [pip](https://pip.pypa.io/) and [conda](https://docs.conda.io/) work too
-- **An OpenAI API key** — for generating embeddings. Get one at [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+Choose this project if you want to compare retrieval methods over the same
+incident corpus, run a Streamlit demo, or present the accompanying Reveal.js
+deck. It includes Docker Compose services, data preparation and evaluation
+commands, SQL indexes, a terminal demo, a web interface, and speaker material.
 
-## Getting Started
+Start with the [State of Search guide](./State-of-Search/README.md). The project
+is self-contained, including its deterministic data generator and seed files.
 
-1. **Clone this repository**
+## Requirements
 
-   ```bash
-   git clone https://github.com/tigerdatadev/cookbook-search.git
-   cd cookbook-search
-   ```
+Requirements vary by project:
 
-2. **Set up your environment variables**
+| Requirement | Hybrid Search | State of Search |
+|---|---:|---:|
+| PostgreSQL with the documented search extensions | Required | Provided by Docker Compose |
+| Docker | Optional | Required for the full demo |
+| Python | 3.9+ | 3.11+ inside the app image |
+| Node.js | Not required | 20.19.x or 22.12+ for the slides |
+| OpenAI API key | Required for embeddings | Required for semantic-search preparation and uncached query embeddings |
+| Elasticsearch | Not required | Optional Compose profile |
 
-   Each cookbook folder has its own `.env.example` file. Copy it and add your API key:
+Tiger Cloud can provide a hosted PostgreSQL service with the required
+extensions. The local instructions use Docker and the
+[`timescaledb-ha`](https://github.com/timescale/timescaledb-docker-ha) image.
 
-   ```bash
-   cd Hybrid-search
-   cp .env.example .env
-   ```
+## Repository layout
 
-   Open `.env` and replace the placeholder with your actual OpenAI key:
+```text
+cookbook-search/
+├── Hybrid-search/       # Focused hybrid-search tutorial
+├── State-of-Search/     # Multi-method demo, evaluation harness, and slides
+├── CLAUDE.md            # Repository guidance for AI coding tools
+├── LICENSE              # Apache License 2.0
+└── README.md            # Repository overview
+```
 
-   ```
-   OPENAI_API_KEY=your-key-here
-   ```
+Every project has its own README and environment template. Keep secrets in a
+local `.env` file; `.env` files are ignored by Git, while `.env.example` files
+document the required variables.
 
-3. **Pick a cookbook and follow the tutorial**
+## Quick start
 
-   Each cookbook folder has its own README with step-by-step instructions. Start with the [Hybrid Search](./Hybrid-search/) cookbook:
+Clone the repository, then follow the guide for the project you selected:
 
-   | File | What it does |
-   |------|-------------|
-   | [`Hybrid-search/README.md`](./Hybrid-search/README.md) | Full walkthrough — database setup, data loading, embeddings, search queries |
-   | [`Hybrid-search/setup.sql`](./Hybrid-search/setup.sql) | One-command setup: creates extensions, table, sample data, and indexes |
-   | [`Hybrid-search/embed.py`](./Hybrid-search/embed.py) | Generates embeddings for the sample data using OpenAI's API |
-   | [`Hybrid-search/requirements.txt`](./Hybrid-search/requirements.txt) | Python dependencies for the embedding script |
-   | [`Hybrid-search/.env.example`](./Hybrid-search/.env.example) | Template for your OpenAI API key — copy to `.env` and fill in |
+```bash
+git clone https://github.com/timescale/cookbook-search.git
+cd cookbook-search
+```
+
+For Hybrid Search:
+
+```bash
+cd Hybrid-search
+cp .env.example .env
+```
+
+For the State of Search presentation:
+
+```bash
+cd State-of-Search
+nvm use # optional; uses .nvmrc
+npm install
+npm run dev
+```
+
+See the project README before adding credentials or starting services:
+
+- [Hybrid Search setup and walkthrough](./Hybrid-search/README.md)
+- [State of Search setup, demo, evaluation, and presentation](./State-of-Search/README.md)
 
 ## Contributing
 
-Have a search pattern or technique you'd like to add? Open a PR! Each cookbook should include:
+Keep each cookbook self-contained and include:
 
-- A `README.md` with a step-by-step tutorial explaining the approach
-- Example SQL or code demonstrating the technique
-- Sample data or a script to generate it
-- A `requirements.txt` if any Python dependencies are needed
+- A step-by-step README with prerequisites, setup, verification, limitations,
+  and cleanup guidance.
+- Runnable SQL or application code.
+- Sample data or a deterministic generation script with source attribution.
+- An `.env.example` file for required configuration, with no real credentials.
+- A dependency manifest and lockfile when the ecosystem supports one.
+
+Before opening a pull request, run the relevant build, syntax, and link checks
+documented by the project.
 
 ## License
 
-This repository is licensed under the [Apache License 2.0](./LICENSE). Sample data in the Hybrid Search cookbook uses transcripts from the [Conduit podcast](https://www.relay.fm/conduit) via [kjaymiller/conduit-transcripts](https://github.com/kjaymiller/conduit-transcripts) (MIT License, Jay Miller).
+This repository is licensed under the [Apache License 2.0](./LICENSE). The
+Hybrid Search sample data uses transcripts from the
+[Conduit podcast](https://www.relay.fm/conduit), sourced from
+[`kjaymiller/conduit-transcripts`](https://github.com/kjaymiller/conduit-transcripts)
+under the MIT License.

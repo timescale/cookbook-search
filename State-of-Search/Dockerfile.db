@@ -1,0 +1,3 @@
+# syntax=docker/dockerfile:1.7
+# The HA image packages TimescaleDB, pgvector, pgvectorscale, and pg_textsearch.
+FROM timescale/timescaledb-ha:pg18

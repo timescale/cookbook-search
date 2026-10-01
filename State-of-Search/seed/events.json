@@ -1,0 +1,75 @@
+{
+ "environments": {
+  "production": 188745,
+  "staging": 35341,
+  "dev": 11914
+ },
+ "regions": {
+  "eu-central-1": 47194,
+  "us-east-1": 106201,
+  "us-west-2": 59030,
+  "ap-southeast-1": 23575
+ },
+ "hour_weights": [
+  4339,
+  2987,
+  2868,
+  2905,
+  2899,
+  2914,
+  4260,
+  5676,
+  7306,
+  8658,
+  10110,
+  11639,
+  12981,
+  14505,
+  16028,
+  17284,
+  17493,
+  17347,
+  17198,
+  15947,
+  14651,
+  11457,
+  8670,
+  5878
+ ],
+ "weekday_weights": [
+  37484,
+  34027,
+  37408,
+  37508,
+  37257,
+  26143,
+  26173
+ ],
+ "phases": {
+  "precursor": {
+   "row_fraction": 0.099,
+   "time_fraction": 0.138
+  },
+  "onset": {
+   "row_fraction": 0.1493,
+   "time_fraction": 0.1423
+  },
+  "peak": {
+   "row_fraction": 0.5033,
+   "time_fraction": 0.397
+  },
+  "mitigation": {
+   "row_fraction": 0.099,
+   "time_fraction": 0.1374
+  },
+  "recovery": {
+   "row_fraction": 0.1493,
+   "time_fraction": 0.1434
+  }
+ },
+ "incident_row_share": 0.0641,
+ "latency_ms_range": [
+  8,
+  420
+ ]
+}

@@ -1,0 +1,17 @@
+{
+  "name": "state-of-search",
+  "private": true,
+  "version": "1.0.0",
+  "description": "State of Search demo and Reveal.js presentation",
+  "workspaces": [
+    "slides"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=slides",
+    "build": "npm run build --workspace=slides",
+    "preview": "npm run preview --workspace=slides"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  }
+}

@@ -1,0 +1,10 @@
+.env
+data/
+results/
+__pycache__/
+.pytest_cache/
+
+# Keep the root npm lockfile for reproducible presentation installs. The
+# repository-level .gitignore otherwise ignores every package-lock.json.
+!package-lock.json
+slides/package-lock.json

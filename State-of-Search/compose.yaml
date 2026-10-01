@@ -1,0 +1,83 @@
+name: state-of-search
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: Dockerfile.db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-state-of-search-demo}
+      POSTGRES_DB: state_of_search
+      TIMESCALEDB_TELEMETRY: "off"
+    ports:
+      - "127.0.0.1:5440:5432"
+    volumes:
+      - postgres_data:/home/postgres/pgdata/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d state_of_search"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+
+  app:
+    build:
+      context: ..
+      dockerfile: State-of-Search/Dockerfile.app
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:state-of-search-demo@db:5432/state_of_search}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      DATASET_PROFILE: ${DATASET_PROFILE:-sample}
+      EMBED_BATCH_SIZE: ${EMBED_BATCH_SIZE:-100}
+      ELASTIC_URL: ${ELASTIC_URL:-http://elasticsearch:9200}
+    ports:
+      - "127.0.0.1:8501:8501"
+    volumes:
+      - generated_data:/workspace/data
+      - ./results:/workspace/results
+    depends_on:
+      db:
+        condition: service_healthy
+
+  prepare:
+    build:
+      context: ..
+      dockerfile: State-of-Search/Dockerfile.app
+    command: ["python", "-m", "app.prepare", "all"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:state-of-search-demo@db:5432/state_of_search}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      DATASET_PROFILE: ${DATASET_PROFILE:-sample}
+      EMBED_BATCH_SIZE: ${EMBED_BATCH_SIZE:-100}
+      ELASTIC_URL: ${ELASTIC_URL:-http://elasticsearch:9200}
+    volumes:
+      - generated_data:/workspace/data
+      - ./results:/workspace/results
+    depends_on:
+      db:
+        condition: service_healthy
+
+  elasticsearch:
+    profiles: [elastic]
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-9.5.4}
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      xpack.ml.enabled: "false"
+      ES_JAVA_OPTS: -Xms1g -Xmx1g
+    ports:
+      - "127.0.0.1:9200:9200"
+    volumes:
+      - elastic_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:9200/_cluster/health >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  postgres_data:
+  generated_data:
+  elastic_data:

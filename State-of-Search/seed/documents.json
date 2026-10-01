@@ -1,0 +1,447 @@
+{
+ "handbook": [
+  {
+   "section": "Severity levels",
+   "content": "SEV1: customer-facing outage or data loss affecting most users, for example checkout unavailable or the public API down. Page the on-call and an incident commander immediately, open a status page entry within 15 minutes. SEV2: significant degradation for a subset of users or a tier-1 service running with reduced capacity. Page the owning team. SEV3: minor impact, delayed processing, or elevated error rates within SLO. Handle during business hours. Severity can be raised at any time and should be lowered only by the incident commander."
+  },
+  {
+   "section": "Declaring an incident",
+   "content": "Anyone can declare an incident. Run /incident declare in Slack with a one-line summary; the bot creates the channel, assigns the on-call as interim commander, and starts the timeline. Post what you see, not what you think caused it. Link the firing alerts. If a deploy happened in the last hour to any involved service, say so in the first message."
+  },
+  {
+   "section": "Roles",
+   "content": "Incident commander owns decisions and communication and does not debug. Operations lead runs the technical investigation and mitigation. Communications lead updates the status page and stakeholder channel every 30 minutes for SEV1 and every hour for SEV2. Scribe keeps the timeline in the incident channel. In small incidents one person may hold several roles, but the commander should always be named."
+  },
+  {
+   "section": "Rollback first",
+   "content": "If a deploy to any involved service happened within the last hour, roll it back before investigating further. Rollbacks are cheap and reversible; debugging under pressure is neither. The deploy tool supports tigerlily-deploy rollback <service> --to <version> and completes in two to three minutes for most services. Schema migrations are the exception: check the migration notes before rolling back a service whose deploy included one."
+  },
+  {
+   "section": "Communication cadence",
+   "content": "Post an update in the incident channel at least every 15 minutes during active mitigation, even if the update is 'no change, still investigating X'. Status page updates use the templates in the comms folder. Never promise a resolution time. When mitigated, say mitigated, not resolved; resolved means the root cause is fixed."
+  },
+  {
+   "section": "Escalation paths",
+   "content": "Each team has a primary and secondary on-call in the pager tool. If the primary does not acknowledge within 5 minutes, the page escalates to the secondary, then to the team lead. For cross-cutting infrastructure (Kubernetes, networking, DNS, mesh) page platform-infra. For databases, Redis, and Kafka page data-infra. For vendor issues, the commander opens the vendor case; do not wait for the vendor before mitigating on our side."
+  },
+  {
+   "section": "Postmortem timing",
+   "content": "Every SEV1 and SEV2 gets a blameless postmortem within five business days. The postmortem owner is the operations lead unless reassigned. Use the template in the postmortems folder: summary, timeline, root cause, contributing factors, impact, what went well, action items with owners and due dates. Action items are tracked as GitHub issues labeled postmortem-action-item and reviewed weekly."
+  },
+  {
+   "section": "Handover checklist",
+   "content": "Before ending your on-call shift: review open incidents and their status, note any alerts you silenced and when the silence expires, list deploys scheduled during the next shift, and post the handover summary in the team channel. If an incident is still active, do a verbal handover with the incoming on-call rather than a written one."
+  },
+  {
+   "section": "Alert hygiene",
+   "content": "An alert that fires and needs no action is a bug in the alert. If you acknowledge an alert and take no action, open an issue to tune or delete it before your shift ends. Warning-level alerts route to Slack; critical alerts page. If a warning should have paged, change its severity rather than adding a second alert."
+  },
+  {
+   "section": "Change freeze",
+   "content": "Production deploys are frozen during the two highest-traffic weeks of the year and during any active SEV1. Emergency fixes during a freeze need approval from the incident commander or the on-call platform lead. Flag changes count as deploys for the purpose of the freeze."
+  },
+  {
+   "section": "Useful queries",
+   "content": "Connections by app: SELECT application_name, state, count(*) FROM pg_stat_activity GROUP BY 1,2 ORDER BY 3 DESC. Blockers: SELECT pid, pg_blocking_pids(pid), left(query,60) FROM pg_stat_activity WHERE cardinality(pg_blocking_pids(pid)) > 0. Replica lag: SELECT now() - pg_last_xact_replay_timestamp(). Kafka lag: kafka-consumer-groups --describe --group <group>. Evictions: kubectl get events -A --field-selector reason=Evicted."
+  },
+  {
+   "section": "Kubernetes quick reference",
+   "content": "Crash loops: kubectl logs --previous <pod>. Evictions and pressure: kubectl describe node <node> and look at Conditions and Allocated resources. Stuck rollouts: kubectl rollout status deploy/<name> and kubectl rollout undo. Resource hogs: kubectl top pod -A --sort-by=memory. DNS: run a debug pod and dig <service>.<namespace>.svc.cluster.local."
+  }
+ ],
+ "architecture": {
+  "checkout-api": [
+   {
+    "section": "Overview",
+    "content": "checkout-api is owned by payments-platform and written in Go. It runs in the payments namespace with 8 replicas in production behind the API gateway. Its primary dependencies are payments, cart-service, inventory. Traffic peaks at roughly 150 requests per second during US evening hours."
+   },
+   {
+    "section": "Data storage",
+    "content": "checkout-api stores its durable state in the shared Postgres primary (schema checkout_api) and uses Redis for short-lived caching with TTLs between 30 seconds and 2 hours. It does not own any tables outside its schema. Cross-service reads go through APIs, never through shared tables."
+   },
+   {
+    "section": "Scaling and limits",
+    "content": "Production runs 8 replicas with an HPA targeting 60% CPU, minimum 4, maximum 24. Each replica requests 500m CPU and 512Mi memory with a limit of 1024Mi. Connection pool to Postgres is capped at 10 per replica. Scale-down stabilization is 300 seconds."
+   },
+   {
+    "section": "Failure modes",
+    "content": "Known failure modes for checkout-api: loss of the Postgres primary (fails all writes), Redis unavailability (falls back to direct reads with higher latency), and slow downstream payments (circuit breaker opens after 20% failures over 30 seconds). Deploys use canary promotion with a 1% error-rate threshold over 15 minutes."
+   },
+   {
+    "section": "Observability",
+    "content": "checkout-api emits structured JSON logs with trace_id, span_id, and request path. Metrics follow the RED pattern (rate, errors, duration) per endpoint. Alerts: CheckoutApiErrorRateHigh at 2% over 5 minutes (page), CheckoutApiLatencyP99 at 800ms (page), and pool utilization at 80% (warning). Dashboards live under the payments-platform folder."
+   }
+  ],
+  "payments": [
+   {
+    "section": "Overview",
+    "content": "payments is owned by payments-platform and written in Go. It runs in the payments namespace with 4 replicas in production behind the API gateway. Its primary dependencies are postgres, payment-processor, billing. Traffic peaks at roughly 150 requests per second during US evening hours."
+   },
+   {
+    "section": "Data storage",
+    "content": "payments stores its durable state in the shared Postgres primary (schema payments) and uses Redis for short-lived caching with TTLs between 30 seconds and 2 hours. It does not own any tables outside its schema. Cross-service reads go through APIs, never through shared tables."
+   },
+   {
+    "section": "Scaling and limits",
+    "content": "Production runs 4 replicas with an HPA targeting 60% CPU, minimum 2, maximum 12. Each replica requests 500m CPU and 256Mi memory with a limit of 1024Mi. Connection pool to Postgres is capped at 30 per replica. Scale-down stabilization is 300 seconds."
+   },
+   {
+    "section": "Failure modes",
+    "content": "Known failure modes for payments: loss of the Postgres primary (fails all writes), Redis unavailability (falls back to direct reads with higher latency), and slow downstream postgres (circuit breaker opens after 20% failures over 30 seconds). Deploys use canary promotion with a 1% error-rate threshold over 15 minutes."
+   },
+   {
+    "section": "Observability",
+    "content": "payments emits structured JSON logs with trace_id, span_id, and request path. Metrics follow the RED pattern (rate, errors, duration) per endpoint. Alerts: PaymentsErrorRateHigh at 2% over 5 minutes (page), PaymentsLatencyP99 at 800ms (page), and pool utilization at 80% (warning). Dashboards live under the payments-platform folder."
+   }
+  ],
+  "billing": [
+   {
+    "section": "Overview",
+    "content": "billing is owned by payments-platform and written in Java. It runs in the payments namespace with 4 replicas in production behind the API gateway. Its primary dependencies are postgres, payment-processor, kafka. Traffic peaks at roughly 4500 requests per second during US evening hours."
+   },
+   {
+    "section": "Data storage",
+    "content": "billing stores its durable state in the shared Postgres primary (schema billing) and uses Redis for short-lived caching with TTLs between 30 seconds and 2 hours. It does not own any tables outside its schema. Cross-service reads go through APIs, never through shared tables."
+   },
+   {
+    "section": "Scaling and limits",
+    "content": "Production runs 4 replicas with an HPA targeting 60% CPU, minimum 2, maximum 12. Each replica requests 250m CPU and 512Mi memory with a limit of 1024Mi. Connection pool to Postgres is capped at 30 per replica. Scale-down stabilization is 300 seconds."
+   },
+   {
+    "section": "Failure modes",
+    "content": "Known failure modes for billing: loss of the Postgres primary (fails all writes), Redis unavailability (falls back to direct reads with higher latency), and slow downstream postgres (circuit breaker opens after 20% failures over 30 seconds). Deploys use canary promotion with a 1% error-rate threshold over 15 minutes."
+   },
+   {
+    "section": "Observability",
+    "content": "billing emits structured JSON logs with trace_id, span_id, and request path. Metrics follow the RED pattern (rate, errors, duration) per endpoint. Alerts: BillingErrorRateHigh at 2% over 5 minutes (page), BillingLatencyP99 at 800ms (page), and pool utilization at 80% (warning). Dashboards live under the payments-platform folder."
+   }
+  ],
+  "cart-service": [
+   {
+    "section": "Overview",
+    "content": "cart-service is owned by storefront and written in Node.js. It runs in the storefront namespace with 4 replicas in production behind the API gateway. Its primary dependencies are redis-cache, catalog-api, postgres. Traffic peaks at roughly 2200 requests per second during US evening hours."
+   },
+   {
+    "section": "Data storage",
+    "content": "cart-service stores its durable state in the shared Postgres primary (schema cart_service) and uses Redis for short-lived caching with TTLs between 30 seconds and 2 hours. It does not own any tables outside its schema. Cross-service reads go through APIs, never through shared tables."
+   },
+   {
+    "section": "Scaling and limits",
+    "content": "Production runs 4 replicas with an HPA targeting 60% CPU, minimum 2, maximum 12. Each replica requests 1000m CPU and 1024Mi memory with a limit of 2048Mi. Connection pool to Postgres is capped at 50 per replica. Scale-down stabilization is 300 seconds."
+   },
+   {
+    "section": "Failure modes",
+    "content": "Known failure modes for cart-service: loss of the Postgres primary (fails all writes), Redis unavailability (falls back to direct reads with higher latency), and slow downstream redis-cache (circuit breaker opens after 20% failures over 30 seconds). Deploys use canary promotion with a 1% error-rate threshold over 15 minutes."
+   },
+   {
+    "section": "Observability",
+    "content": "cart-service emits structured JSON logs with trace_id, span_id, and request path. Metrics follow the RED pattern (rate, errors, duration) per endpoint. Alerts: CartServiceErrorRateHigh at 2% over 5 minutes (page), CartServiceLatencyP99 at 800ms (page), and pool utilization at 80% (warning). Dashboards live under the storefront folder."
+   }
+  ],
+  "catalog-api": [
+   {
+    "section": "Overview",
+    "content": "catalog-api is owned by storefront and written in Java. It runs in the storefront namespace with 4 replicas in production behind the API gateway. Its primary dependencies are postgres, redis-cache, image-resizer. Traffic peaks at roughly 400 requests per second during US evening hours."
+   },
+   {
+    "section": "Data storage",
+    "content": "catalog-api stores its durable state in the shared Postgres primary (schema catalog_api) and uses Redis for short-lived caching with TTLs between 30 seconds and 2 hours. It does not own any tables outside its schema. Cross-service reads go through APIs, never through shared tables."
+   },
+   {
+    "section": "Scaling and limits",
+    "content": "Production runs 4 replicas with an HPA targeting 60% CPU, minimum 2, maximum 12. Each replica requests 250m CPU and 512Mi memory with a limit of 1536Mi. Connection pool to Postgres is capped at 30 per replica. Scale-down stabilization is 300 seconds."
+   },
+   {
+    "section": "Failure modes",
+    "content": "Known failure modes for catalog-api: loss of the Postgres primary (fails all writes), Redis unavailability (falls back to direct reads with higher latency), and slow downstream postgres (circuit breaker opens after 20% failures over 30 seconds). Deploys use canary promotion with a 1% error-rate threshold over 15 minutes."
+   },
+   {
+    "section": "Observability",
+    "content": "catalog-api emits structured JSON logs with trace_id, span_id, and request path. Metrics follow the RED pattern (rate, errors, duration) per endpoint. Alerts: CatalogApiErrorRateHigh at 2% over 5 minutes (page), CatalogApiLatencyP99 at 800ms (page), and pool utilization at 80% (warning). Dashboards live under the storefront folder."
+   }
+  ],
+  "search-api": [
+   {
+    "section": "Overview",
+    "content": "search-api is owned by discovery and written in Python. It runs in the discovery namespace with 12 replicas in production behind the API gateway. Its primary dependencies are postgres, catalog-api, redis-cache. Traffic peaks at roughly 400 requests per second during US evening hours."
+   },
+   {
+    "section": "Data storage",
+    "content": "search-api stores its durable state in the shared Postgres primary (schema search_api) and uses Redis for short-lived caching with TTLs between 30 seconds and 2 hours. It does not own any tables outside its schema. Cross-service reads go through APIs, never through shared tables."
+   },
+   {
+    "section": "Scaling and limits",
+    "content": "Production runs 12 replicas with an HPA targeting 60% CPU, minimum 6, maximum 36. Each replica requests 250m CPU and 512Mi memory with a limit of 1536Mi. Connection pool to Postgres is capped at 50 per replica. Scale-down stabilization is 300 seconds."
+   },
+   {
+    "section": "Failure modes",
+    "content": "Known failure modes for search-api: loss of the Postgres primary (fails all writes), Redis unavailability (falls back to direct reads with higher latency), and slow downstream postgres (circuit breaker opens after 20% failures over 30 seconds). Deploys use canary promotion with a 1% error-rate threshold over 15 minutes."
+   },
+   {
+    "section": "Observability",
+    "content": "search-api emits structured JSON logs with trace_id, span_id, and request path. Metrics follow the RED pattern (rate, errors, duration) per endpoint. Alerts: SearchApiErrorRateHigh at 2% over 5 minutes (page), SearchApiLatencyP99 at 800ms (page), and pool utilization at 80% (warning). Dashboards live under the discovery folder."
+   }
+  ],
+  "recommendations": [
+   {
+    "section": "Overview",
+    "content": "recommendations is owned by discovery and written in Python. It runs in the discovery namespace with 12 replicas in production behind the API gateway. Its primary dependencies are embedding-worker, postgres, redis-cache. Traffic peaks at roughly 900 requests per second during US evening hours."
+   },
+   {
+    "section": "Data storage",
+    "content": "recommendations stores its durable state in the shared Postgres primary (schema recommendations) and uses Redis for short-lived caching with TTLs between 30 seconds and 2 hours. It does not own any tables outside its schema. Cross-service reads go through APIs, never through shared tables."
+   },
+   {
+    "section": "Scaling and limits",
+    "content": "Production runs 12 replicas with an HPA targeting 60% CPU, minimum 6, maximum 36. Each replica requests 250m CPU and 256Mi memory with a limit of 1024Mi. Connection pool to Postgres is capped at 10 per replica. Scale-down stabilization is 300 seconds."
+   },
+   {
+    "section": "Failure modes",
+    "content": "Known failure modes for recommendations: loss of the Postgres primary (fails all writes), Redis unavailability (falls back to direct reads with higher latency), and slow downstream embedding-worker (circuit breaker opens after 20% failures over 30 seconds). Deploys use canary promotion with a 1% error-rate threshold over 15 minutes."
+   },
+   {
+    "section": "Observability",
+    "content": "recommendations emits structured JSON logs with trace_id, span_id, and request path. Metrics follow the RED pattern (rate, errors, duration) per endpoint. Alerts: RecommendationsErrorRateHigh at 2% over 5 minutes (page), RecommendationsLatencyP99 at 800ms (page), and pool utilization at 80% (warning). Dashboards live under the discovery folder."
+   }
+  ],
+  "embedding-worker": [
+   {
+    "section": "Overview",
+    "content": "embedding-worker is owned by discovery and written in Python. It runs in the discovery namespace with 8 replicas in production behind the API gateway. Its primary dependencies are postgres, kafka, object-store. Traffic peaks at roughly 150 requests per second during US evening hours."
+   },
+   {
+    "section": "Data storage",
+    "content": "embedding-worker stores its durable state in the shared Postgres primary (schema embedding_worker) and uses Redis for short-lived caching with TTLs between 30 seconds and 2 hours. It does not own any tables outside its schema. Cross-service reads go through APIs, never through shared tables."
+   },
+   {
+    "section": "Scaling and limits",
+    "content": "Production runs 8 replicas with an HPA targeting 60% CPU, minimum 4, maximum 24. Each replica requests 500m CPU and 256Mi memory with a limit of 1536Mi. Connection pool to Postgres is capped at 20 per replica. Scale-down stabilization is 300 seconds."
+   },
+   {
+    "section": "Failure modes",
+    "content": "Known failure modes for embedding-worker: loss of the Postgres primary (fails all writes), Redis unavailability (falls back to direct reads with higher latency), and slow downstream postgres (circuit breaker opens after 20% failures over 30 seconds). Deploys use canary promotion with a 1% error-rate threshold over 15 minutes."
+   },
+   {
+    "section": "Observability",
+    "content": "embedding-worker emits structured JSON logs with trace_id, span_id, and request path. Metrics follow the RED pattern (rate, errors, duration) per endpoint. Alerts: EmbeddingWorkerErrorRateHigh at 2% over 5 minutes (page), EmbeddingWorkerLatencyP99 at 800ms (page), and pool utilization at 80% (warning). Dashboards live under the discovery folder."
+   }
+  ],
+  "inventory": [
+   {
+    "section": "Overview",
+    "content": "inventory is owned by fulfillment and written in Go. It runs in the fulfillment namespace with 12 replicas in production behind the API gateway. Its primary dependencies are postgres, kafka. Traffic peaks at roughly 400 requests per second during US evening hours."
+   },
+   {
+    "section": "Data storage",
+    "content": "inventory stores its durable state in the shared Postgres primary (schema inventory) and uses Redis for short-lived caching with TTLs between 30 seconds and 2 hours. It does not own any tables outside its schema. Cross-service reads go through APIs, never through shared tables."
+   },
+   {
+    "section": "Scaling and limits",
+    "content": "Production runs 12 replicas with an HPA targeting 60% CPU, minimum 6, maximum 36. Each replica requests 250m CPU and 1024Mi memory with a limit of 2048Mi. Connection pool to Postgres is capped at 20 per replica. Scale-down stabilization is 300 seconds."
+   },
+   {
+    "section": "Failure modes",
+    "content": "Known failure modes for inventory: loss of the Postgres primary (fails all writes), Redis unavailability (falls back to direct reads with higher latency), and slow downstream postgres (circuit breaker opens after 20% failures over 30 seconds). Deploys use canary promotion with a 1% error-rate threshold over 15 minutes."
+   },
+   {
+    "section": "Observability",
+    "content": "inventory emits structured JSON logs with trace_id, span_id, and request path. Metrics follow the RED pattern (rate, errors, duration) per endpoint. Alerts: InventoryErrorRateHigh at 2% over 5 minutes (page), InventoryLatencyP99 at 800ms (page), and pool utilization at 80% (warning). Dashboards live under the fulfillment folder."
+   }
+  ],
+  "order-service": [
+   {
+    "section": "Overview",
+    "content": "order-service is owned by fulfillment and written in Java. It runs in the fulfillment namespace with 12 replicas in production behind the API gateway. Its primary dependencies are postgres, kafka, inventory. Traffic peaks at roughly 150 requests per second during US evening hours."
+   },
+   {
+    "section": "Data storage",
+    "content": "order-service stores its durable state in the shared Postgres primary (schema order_service) and uses Redis for short-lived caching with TTLs between 30 seconds and 2 hours. It does not own any tables outside its schema. Cross-service reads go through APIs, never through shared tables."
+   },
+   {
+    "section": "Scaling and limits",
+    "content": "Production runs 12 replicas with an HPA targeting 60% CPU, minimum 6, maximum 36. Each replica requests 1000m CPU and 512Mi memory with a limit of 2048Mi. Connection pool to Postgres is capped at 20 per replica. Scale-down stabilization is 300 seconds."
+   },
+   {
+    "section": "Failure modes",
+    "content": "Known failure modes for order-service: loss of the Postgres primary (fails all writes), Redis unavailability (falls back to direct reads with higher latency), and slow downstream postgres (circuit breaker opens after 20% failures over 30 seconds). Deploys use canary promotion with a 1% error-rate threshold over 15 minutes."
+   },
+   {
+    "section": "Observability",
+    "content": "order-service emits structured JSON logs with trace_id, span_id, and request path. Metrics follow the RED pattern (rate, errors, duration) per endpoint. Alerts: OrderServiceErrorRateHigh at 2% over 5 minutes (page), OrderServiceLatencyP99 at 800ms (page), and pool utilization at 80% (warning). Dashboards live under the fulfillment folder."
+   }
+  ],
+  "notifications": [
+   {
+    "section": "Overview",
+    "content": "notifications is owned by growth and written in Node.js. It runs in the growth namespace with 12 replicas in production behind the API gateway. Its primary dependencies are kafka, email-provider, sms-provider. Traffic peaks at roughly 2200 requests per second during US evening hours."
+   },
+   {
+    "section": "Data storage",
+    "content": "notifications stores its durable state in the shared Postgres primary (schema notifications) and uses Redis for short-lived caching with TTLs between 30 seconds and 2 hours. It does not own any tables outside its schema. Cross-service reads go through APIs, never through shared tables."
+   },
+   {
+    "section": "Scaling and limits",
+    "content": "Production runs 12 replicas with an HPA targeting 60% CPU, minimum 6, maximum 36. Each replica requests 500m CPU and 512Mi memory with a limit of 1536Mi. Connection pool to Postgres is capped at 10 per replica. Scale-down stabilization is 300 seconds."
+   },
+   {
+    "section": "Failure modes",
+    "content": "Known failure modes for notifications: loss of the Postgres primary (fails all writes), Redis unavailability (falls back to direct reads with higher latency), and slow downstream kafka (circuit breaker opens after 20% failures over 30 seconds). Deploys use canary promotion with a 1% error-rate threshold over 15 minutes."
+   },
+   {
+    "section": "Observability",
+    "content": "notifications emits structured JSON logs with trace_id, span_id, and request path. Metrics follow the RED pattern (rate, errors, duration) per endpoint. Alerts: NotificationsErrorRateHigh at 2% over 5 minutes (page), NotificationsLatencyP99 at 800ms (page), and pool utilization at 80% (warning). Dashboards live under the growth folder."
+   }
+  ],
+  "auth-service": [
+   {
+    "section": "Overview",
+    "content": "auth-service is owned by identity and written in Go. It runs in the identity namespace with 8 replicas in production behind the API gateway. Its primary dependencies are postgres, redis-cache, user-profile. Traffic peaks at roughly 900 requests per second during US evening hours."
+   },
+   {
+    "section": "Data storage",
+    "content": "auth-service stores its durable state in the shared Postgres primary (schema auth_service) and uses Redis for short-lived caching with TTLs between 30 seconds and 2 hours. It does not own any tables outside its schema. Cross-service reads go through APIs, never through shared tables."
+   },
+   {
+    "section": "Scaling and limits",
+    "content": "Production runs 8 replicas with an HPA targeting 60% CPU, minimum 4, maximum 24. Each replica requests 500m CPU and 1024Mi memory with a limit of 2048Mi. Connection pool to Postgres is capped at 20 per replica. Scale-down stabilization is 300 seconds."
+   },
+   {
+    "section": "Failure modes",
+    "content": "Known failure modes for auth-service: loss of the Postgres primary (fails all writes), Redis unavailability (falls back to direct reads with higher latency), and slow downstream postgres (circuit breaker opens after 20% failures over 30 seconds). Deploys use canary promotion with a 1% error-rate threshold over 15 minutes."
+   },
+   {
+    "section": "Observability",
+    "content": "auth-service emits structured JSON logs with trace_id, span_id, and request path. Metrics follow the RED pattern (rate, errors, duration) per endpoint. Alerts: AuthServiceErrorRateHigh at 2% over 5 minutes (page), AuthServiceLatencyP99 at 800ms (page), and pool utilization at 80% (warning). Dashboards live under the identity folder."
+   }
+  ],
+  "user-profile": [
+   {
+    "section": "Overview",
+    "content": "user-profile is owned by identity and written in Node.js. It runs in the identity namespace with 6 replicas in production behind the API gateway. Its primary dependencies are postgres, redis-cache. Traffic peaks at roughly 400 requests per second during US evening hours."
+   },
+   {
+    "section": "Data storage",
+    "content": "user-profile stores its durable state in the shared Postgres primary (schema user_profile) and uses Redis for short-lived caching with TTLs between 30 seconds and 2 hours. It does not own any tables outside its schema. Cross-service reads go through APIs, never through shared tables."
+   },
+   {
+    "section": "Scaling and limits",
+    "content": "Production runs 6 replicas with an HPA targeting 60% CPU, minimum 3, maximum 18. Each replica requests 500m CPU and 256Mi memory with a limit of 2048Mi. Connection pool to Postgres is capped at 50 per replica. Scale-down stabilization is 300 seconds."
+   },
+   {
+    "section": "Failure modes",
+    "content": "Known failure modes for user-profile: loss of the Postgres primary (fails all writes), Redis unavailability (falls back to direct reads with higher latency), and slow downstream postgres (circuit breaker opens after 20% failures over 30 seconds). Deploys use canary promotion with a 1% error-rate threshold over 15 minutes."
+   },
+   {
+    "section": "Observability",
+    "content": "user-profile emits structured JSON logs with trace_id, span_id, and request path. Metrics follow the RED pattern (rate, errors, duration) per endpoint. Alerts: UserProfileErrorRateHigh at 2% over 5 minutes (page), UserProfileLatencyP99 at 800ms (page), and pool utilization at 80% (warning). Dashboards live under the identity folder."
+   }
+  ],
+  "image-resizer": [
+   {
+    "section": "Overview",
+    "content": "image-resizer is owned by storefront and written in Rust. It runs in the storefront namespace with 6 replicas in production behind the API gateway. Its primary dependencies are object-store, cdn. Traffic peaks at roughly 2200 requests per second during US evening hours."
+   },
+   {
+    "section": "Data storage",
+    "content": "image-resizer stores its durable state in the shared Postgres primary (schema image_resizer) and uses Redis for short-lived caching with TTLs between 30 seconds and 2 hours. It does not own any tables outside its schema. Cross-service reads go through APIs, never through shared tables."
+   },
+   {
+    "section": "Scaling and limits",
+    "content": "Production runs 6 replicas with an HPA targeting 60% CPU, minimum 3, maximum 18. Each replica requests 250m CPU and 256Mi memory with a limit of 1536Mi. Connection pool to Postgres is capped at 30 per replica. Scale-down stabilization is 300 seconds."
+   },
+   {
+    "section": "Failure modes",
+    "content": "Known failure modes for image-resizer: loss of the Postgres primary (fails all writes), Redis unavailability (falls back to direct reads with higher latency), and slow downstream object-store (circuit breaker opens after 20% failures over 30 seconds). Deploys use canary promotion with a 1% error-rate threshold over 15 minutes."
+   },
+   {
+    "section": "Observability",
+    "content": "image-resizer emits structured JSON logs with trace_id, span_id, and request path. Metrics follow the RED pattern (rate, errors, duration) per endpoint. Alerts: ImageResizerErrorRateHigh at 2% over 5 minutes (page), ImageResizerLatencyP99 at 800ms (page), and pool utilization at 80% (warning). Dashboards live under the storefront folder."
+   }
+  ],
+  "scheduler": [
+   {
+    "section": "Overview",
+    "content": "scheduler is owned by platform-infra and written in Go. It runs in the platform namespace with 4 replicas in production behind the API gateway. Its primary dependencies are postgres, kafka. Traffic peaks at roughly 2200 requests per second during US evening hours."
+   },
+   {
+    "section": "Data storage",
+    "content": "scheduler stores its durable state in the shared Postgres primary (schema scheduler) and uses Redis for short-lived caching with TTLs between 30 seconds and 2 hours. It does not own any tables outside its schema. Cross-service reads go through APIs, never through shared tables."
+   },
+   {
+    "section": "Scaling and limits",
+    "content": "Production runs 4 replicas with an HPA targeting 60% CPU, minimum 2, maximum 12. Each replica requests 500m CPU and 512Mi memory with a limit of 2048Mi. Connection pool to Postgres is capped at 20 per replica. Scale-down stabilization is 300 seconds."
+   },
+   {
+    "section": "Failure modes",
+    "content": "Known failure modes for scheduler: loss of the Postgres primary (fails all writes), Redis unavailability (falls back to direct reads with higher latency), and slow downstream postgres (circuit breaker opens after 20% failures over 30 seconds). Deploys use canary promotion with a 1% error-rate threshold over 15 minutes."
+   },
+   {
+    "section": "Observability",
+    "content": "scheduler emits structured JSON logs with trace_id, span_id, and request path. Metrics follow the RED pattern (rate, errors, duration) per endpoint. Alerts: SchedulerErrorRateHigh at 2% over 5 minutes (page), SchedulerLatencyP99 at 800ms (page), and pool utilization at 80% (warning). Dashboards live under the platform-infra folder."
+   }
+  ],
+  "api-gateway": [
+   {
+    "section": "Overview",
+    "content": "api-gateway is owned by platform-infra and written in Go. It runs in the platform namespace with 6 replicas in production behind the API gateway. Its primary dependencies are checkout-api, catalog-api, search-api. Traffic peaks at roughly 400 requests per second during US evening hours."
+   },
+   {
+    "section": "Data storage",
+    "content": "api-gateway stores its durable state in the shared Postgres primary (schema api_gateway) and uses Redis for short-lived caching with TTLs between 30 seconds and 2 hours. It does not own any tables outside its schema. Cross-service reads go through APIs, never through shared tables."
+   },
+   {
+    "section": "Scaling and limits",
+    "content": "Production runs 6 replicas with an HPA targeting 60% CPU, minimum 3, maximum 18. Each replica requests 250m CPU and 512Mi memory with a limit of 1536Mi. Connection pool to Postgres is capped at 20 per replica. Scale-down stabilization is 300 seconds."
+   },
+   {
+    "section": "Failure modes",
+    "content": "Known failure modes for api-gateway: loss of the Postgres primary (fails all writes), Redis unavailability (falls back to direct reads with higher latency), and slow downstream checkout-api (circuit breaker opens after 20% failures over 30 seconds). Deploys use canary promotion with a 1% error-rate threshold over 15 minutes."
+   },
+   {
+    "section": "Observability",
+    "content": "api-gateway emits structured JSON logs with trace_id, span_id, and request path. Metrics follow the RED pattern (rate, errors, duration) per endpoint. Alerts: ApiGatewayErrorRateHigh at 2% over 5 minutes (page), ApiGatewayLatencyP99 at 800ms (page), and pool utilization at 80% (warning). Dashboards live under the platform-infra folder."
+   }
+  ],
+  "edge-proxy": [
+   {
+    "section": "Overview",
+    "content": "edge-proxy is owned by platform-infra and written in config. It runs in the platform namespace with 6 replicas in production behind the API gateway. Its primary dependencies are api-gateway, image-resizer. Traffic peaks at roughly 900 requests per second during US evening hours."
+   },
+   {
+    "section": "Data storage",
+    "content": "edge-proxy stores its durable state in the shared Postgres primary (schema edge_proxy) and uses Redis for short-lived caching with TTLs between 30 seconds and 2 hours. It does not own any tables outside its schema. Cross-service reads go through APIs, never through shared tables."
+   },
+   {
+    "section": "Scaling and limits",
+    "content": "Production runs 6 replicas with an HPA targeting 60% CPU, minimum 3, maximum 18. Each replica requests 500m CPU and 512Mi memory with a limit of 2048Mi. Connection pool to Postgres is capped at 20 per replica. Scale-down stabilization is 300 seconds."
+   },
+   {
+    "section": "Failure modes",
+    "content": "Known failure modes for edge-proxy: loss of the Postgres primary (fails all writes), Redis unavailability (falls back to direct reads with higher latency), and slow downstream api-gateway (circuit breaker opens after 20% failures over 30 seconds). Deploys use canary promotion with a 1% error-rate threshold over 15 minutes."
+   },
+   {
+    "section": "Observability",
+    "content": "edge-proxy emits structured JSON logs with trace_id, span_id, and request path. Metrics follow the RED pattern (rate, errors, duration) per endpoint. Alerts: EdgeProxyErrorRateHigh at 2% over 5 minutes (page), EdgeProxyLatencyP99 at 800ms (page), and pool utilization at 80% (warning). Dashboards live under the platform-infra folder."
+   }
+  ]
+ },
+ "ops_review_tail": ". Postmortems due within five business days. Action item review: <<n>> open, <<n>> closed this week.",
+ "went_well": [
+  [
+   "The alert fired within two minutes of the first errors and the on-call acknowledged within one. The runbook was accurate and the mitigation step worked on the first attempt.",
+   20
+  ],
+  [
+   "The dashboard annotation for the deploy made the correlation obvious. Customer support had a canned response ready within ten minutes.",
+   17
+  ],
+  [
+   "Rollback was chosen quickly instead of debugging in production, which kept the impact window short. The incident channel timeline was complete enough to write this document without guesswork.",
+   15
+  ],
+  [
+   "Cross-team paging worked: data-infra joined within five minutes of being asked. Status page updates went out on the 30-minute cadence.",
+   10
+  ]
+ ]
+}

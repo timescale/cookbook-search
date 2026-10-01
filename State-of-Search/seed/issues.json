@@ -1,0 +1,1697 @@
+{
+ "routine_templates": [
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_rollup_concurrent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the price_history cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add gc_pause_seconds metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the data-infra folder."
+  },
+  {
+   "repo": "tigerlily/auth-service",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to user-profile",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/catalog-api",
+   "labels": "{\"bug\",\"reliability\"}",
+   "title": "Graceful shutdown drops in-flight requests",
+   "body": "On SIGTERM we close the listener before the last requests finish. Add a 20s drain."
+  },
+  {
+   "repo": "tigerlily/edge-proxy",
+   "labels": "{\"maintenance\"}",
+   "title": "Upgrade config runtime to latest LTS",
+   "body": "Current version reaches end of support next quarter. Test suite passes locally on the new version."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"documentation\"}",
+   "title": "Document /healthz error responses",
+   "body": "The OpenAPI spec lists 200 and 500 only. Add 400, 404, 409, and 429 with example bodies."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key POOL_TIMEOUT",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add gc_pause_seconds metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the discovery folder."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to email-provider",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for inventory dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to inventory so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/scheduler",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add consumer_lag metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the platform-infra folder."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on payments during nightly-rollup",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (payments.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_merge_retry fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the carts cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/payments",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_reserve_concurrent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the orders cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/billing",
+   "labels": "{\"enhancement\"}",
+   "title": "Support pagination on /v1/items",
+   "body": "Clients request the full list and it is now over 5k items for large accounts. Add cursor pagination with a default page size of 50."
+  },
+  {
+   "repo": "tigerlily/inventory",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on users during nightly-rollup",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (users.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_rollup_concurrent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the sessions cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for postgres dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to postgres so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"documentation\"}",
+   "title": "Document /v1/recommendations/similar/{id} error responses",
+   "body": "The OpenAPI spec lists 200 and 500 only. Add 400, 404, 409, and 429 with example bodies."
+  },
+  {
+   "repo": "tigerlily/api-gateway",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to checkout-api",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to postgres",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump kafka-clients from 1.3.4 to 4.10.1",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from cache refresh",
+   "body": "This log line fires on every request and accounts for 20% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"bug\",\"reliability\"}",
+   "title": "Graceful shutdown drops in-flight requests",
+   "body": "On SIGTERM we close the listener before the last requests finish. Add a 20s drain."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump gin from 4.15.6 to 3.5.9",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/billing",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add cache_hit_ratio metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the payments-platform folder."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from readiness probe",
+   "body": "This log line fires on every request and accounts for 15% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/search-api",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from request completed",
+   "body": "This log line fires on every request and accounts for 39% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_merge_timeout fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the carts cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/search-api",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump pgx from 5.24.0 to 1.28.4",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/search-api",
+   "labels": "{\"bug\",\"reliability\"}",
+   "title": "Graceful shutdown drops in-flight requests",
+   "body": "On SIGTERM we close the listener before the last requests finish. Add a 20s drain."
+  },
+  {
+   "repo": "tigerlily/cart-service",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to redis-cache",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/checkout-api",
+   "labels": "{\"maintenance\"}",
+   "title": "Upgrade Go runtime to latest LTS",
+   "body": "Current version reaches end of support next quarter. Test suite passes locally on the new version."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_rollup_timeout fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the carts cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/billing",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key RETRY_DELAY",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/payments",
+   "labels": "{\"bug\",\"reliability\"}",
+   "title": "Graceful shutdown drops in-flight requests",
+   "body": "On SIGTERM we close the listener before the last requests finish. Add a 20s drain."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"enhancement\"}",
+   "title": "Support pagination on /v1/items",
+   "body": "Clients request the full list and it is now over 5k items for large accounts. Add cursor pagination with a default page size of 50."
+  },
+  {
+   "repo": "tigerlily/billing",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add upstream_5xx_rate metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the payments-platform folder."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_reserve_concurrent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the orders cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/user-profile",
+   "labels": "{\"documentation\"}",
+   "title": "Document /v1/users/{id}/preferences error responses",
+   "body": "The OpenAPI spec lists 200 and 500 only. Add 400, 404, 409, and 429 with example bodies."
+  },
+  {
+   "repo": "tigerlily/api-gateway",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add cache_hit_ratio metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the platform-infra folder."
+  },
+  {
+   "repo": "tigerlily/catalog-api",
+   "labels": "{\"maintenance\"}",
+   "title": "Upgrade Java runtime to latest LTS",
+   "body": "Current version reaches end of support next quarter. Test suite passes locally on the new version."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"enhancement\"}",
+   "title": "Support pagination on /v1/items",
+   "body": "Clients request the full list and it is now over 5k items for large accounts. Add cursor pagination with a default page size of 50."
+  },
+  {
+   "repo": "tigerlily/catalog-api",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump jackson from 2.29.8 to 1.7.6",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/scheduler",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump gin from 4.16.0 to 5.30.4",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/checkout-api",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add pool_wait_seconds metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the payments-platform folder."
+  },
+  {
+   "repo": "tigerlily/user-profile",
+   "labels": "{\"bug\",\"reliability\"}",
+   "title": "Graceful shutdown drops in-flight requests",
+   "body": "On SIGTERM we close the listener before the last requests finish. Add a 20s drain."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on sessions during embed-product-batch",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (sessions.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on price_history during email-dispatch",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (price_history.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/auth-service",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key RETRY_DELAY",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/payments",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_reindex_timeout fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the orders cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on users during digest-builder",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (users.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/api-gateway",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add consumer_lag metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the platform-infra folder."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add consumer_lag metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the fulfillment folder."
+  },
+  {
+   "repo": "tigerlily/user-profile",
+   "labels": "{\"documentation\"}",
+   "title": "Document /v1/users/{id} error responses",
+   "body": "The OpenAPI spec lists 200 and 500 only. Add 400, 404, 409, and 429 with example bodies."
+  },
+  {
+   "repo": "tigerlily/catalog-api",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add gc_pause_seconds metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the storefront folder."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"maintenance\"}",
+   "title": "Upgrade Python runtime to latest LTS",
+   "body": "Current version reaches end of support next quarter. Test suite passes locally on the new version."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"documentation\"}",
+   "title": "Document /v1/items error responses",
+   "body": "The OpenAPI spec lists 200 and 500 only. Add 400, 404, 409, and 429 with example bodies."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"maintenance\"}",
+   "title": "Upgrade config runtime to latest LTS",
+   "body": "Current version reaches end of support next quarter. Test suite passes locally on the new version."
+  },
+  {
+   "repo": "tigerlily/search-api",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for catalog-api dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to catalog-api so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for sms-provider dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to sms-provider so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/checkout-api",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key POOL_TIMEOUT",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add cache_hit_ratio metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the fulfillment folder."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key DRAIN_WAIT",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/scheduler",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add cache_hit_ratio metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the platform-infra folder."
+  },
+  {
+   "repo": "tigerlily/user-profile",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to postgres",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/auth-service",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add pool_wait_seconds metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the identity folder."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key CACHE_TTL",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/auth-service",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for user-profile dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to user-profile so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/user-profile",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_refund_idempotent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the products cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/edge-proxy",
+   "labels": "{\"bug\",\"reliability\"}",
+   "title": "Graceful shutdown drops in-flight requests",
+   "body": "On SIGTERM we close the listener before the last requests finish. Add a 20s drain."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on sessions during email-dispatch",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (sessions.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/billing",
+   "labels": "{\"bug\",\"reliability\"}",
+   "title": "Graceful shutdown drops in-flight requests",
+   "body": "On SIGTERM we close the listener before the last requests finish. Add a 20s drain."
+  },
+  {
+   "repo": "tigerlily/inventory",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from readiness probe",
+   "body": "This log line fires on every request and accounts for 25% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/cart-service",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from request completed",
+   "body": "This log line fires on every request and accounts for 9% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/image-resizer",
+   "labels": "{\"maintenance\"}",
+   "title": "Upgrade Rust runtime to latest LTS",
+   "body": "Current version reaches end of support next quarter. Test suite passes locally on the new version."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on order_items during digest-builder",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (order_items.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from heartbeat",
+   "body": "This log line fires on every request and accounts for 31% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add gc_pause_seconds metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the fulfillment folder."
+  },
+  {
+   "repo": "tigerlily/catalog-api",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump otel-sdk from 2.26.8 to 3.3.9",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/user-profile",
+   "labels": "{\"maintenance\"}",
+   "title": "Upgrade Node.js runtime to latest LTS",
+   "body": "Current version reaches end of support next quarter. Test suite passes locally on the new version."
+  },
+  {
+   "repo": "tigerlily/scheduler",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for postgres dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to postgres so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/api-gateway",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for catalog-api dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to catalog-api so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/inventory",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for postgres dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to postgres so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/inventory",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from readiness probe",
+   "body": "This log line fires on every request and accounts for 12% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for kafka dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to kafka so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/inventory",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to postgres",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/inventory",
+   "labels": "{\"enhancement\"}",
+   "title": "Support pagination on /v1/inventory/release",
+   "body": "Clients request the full list and it is now over 5k items for large accounts. Add cursor pagination with a default page size of 50."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"documentation\"}",
+   "title": "Document /v1/recommendations/{id} error responses",
+   "body": "The OpenAPI spec lists 200 and 500 only. Add 400, 404, 409, and 429 with example bodies."
+  },
+  {
+   "repo": "tigerlily/cart-service",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add consumer_lag metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the storefront folder."
+  },
+  {
+   "repo": "tigerlily/auth-service",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on price_history during nightly-rollup",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (price_history.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key POOL_TIMEOUT",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/catalog-api",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to image-resizer",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/billing",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for kafka dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to kafka so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/checkout-api",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_reserve_idempotent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the users cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/cart-service",
+   "labels": "{\"enhancement\"}",
+   "title": "Support pagination on /v1/cart/{id}/items",
+   "body": "Clients request the full list and it is now over 5k items for large accounts. Add cursor pagination with a default page size of 50."
+  },
+  {
+   "repo": "tigerlily/catalog-api",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for postgres dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to postgres so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on audit_log during nightly-rollup",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (audit_log.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/edge-proxy",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump tokio from 2.22.8 to 1.13.3",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump gin from 4.18.0 to 3.26.7",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/billing",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to kafka",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"enhancement\"}",
+   "title": "Support pagination on /healthz",
+   "body": "Clients request the full list and it is now over 5k items for large accounts. Add cursor pagination with a default page size of 50."
+  },
+  {
+   "repo": "tigerlily/billing",
+   "labels": "{\"maintenance\"}",
+   "title": "Upgrade Java runtime to latest LTS",
+   "body": "Current version reaches end of support next quarter. Test suite passes locally on the new version."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_reindex_concurrent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the notifications_outbox cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/cart-service",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to postgres",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/api-gateway",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add pool_wait_seconds metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the platform-infra folder."
+  },
+  {
+   "repo": "tigerlily/scheduler",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key POOL_TIMEOUT",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for kafka dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to kafka so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/inventory",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key DRAIN_WAIT",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/search-api",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add gc_pause_seconds metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the discovery folder."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"bug\",\"reliability\"}",
+   "title": "Graceful shutdown drops in-flight requests",
+   "body": "On SIGTERM we close the listener before the last requests finish. Add a 20s drain."
+  },
+  {
+   "repo": "tigerlily/image-resizer",
+   "labels": "{\"enhancement\"}",
+   "title": "Support pagination on /v1/items",
+   "body": "Clients request the full list and it is now over 5k items for large accounts. Add cursor pagination with a default page size of 50."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to postgres",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/payments",
+   "labels": "{\"maintenance\"}",
+   "title": "Upgrade Go runtime to latest LTS",
+   "body": "Current version reaches end of support next quarter. Test suite passes locally on the new version."
+  },
+  {
+   "repo": "tigerlily/payments",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump jackson from 1.10.6 to 2.8.4",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/inventory",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from readiness probe",
+   "body": "This log line fires on every request and accounts for 18% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/cart-service",
+   "labels": "{\"maintenance\"}",
+   "title": "Upgrade Node.js runtime to latest LTS",
+   "body": "Current version reaches end of support next quarter. Test suite passes locally on the new version."
+  },
+  {
+   "repo": "tigerlily/scheduler",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to postgres",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/cart-service",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump tokio from 3.26.7 to 1.25.9",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"enhancement\"}",
+   "title": "Support pagination on /v1/items",
+   "body": "Clients request the full list and it is now over 5k items for large accounts. Add cursor pagination with a default page size of 50."
+  },
+  {
+   "repo": "tigerlily/inventory",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from heartbeat",
+   "body": "This log line fires on every request and accounts for 22% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key RETRY_DELAY",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_rollup_timeout fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the audit_log cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/search-api",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from heartbeat",
+   "body": "This log line fires on every request and accounts for 26% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/inventory",
+   "labels": "{\"documentation\"}",
+   "title": "Document /v1/inventory/{id} error responses",
+   "body": "The OpenAPI spec lists 200 and 500 only. Add 400, 404, 409, and 429 with example bodies."
+  },
+  {
+   "repo": "tigerlily/search-api",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump redis-py from 2.18.1 to 5.10.9",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/billing",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump pgx from 2.26.5 to 2.10.0",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/checkout-api",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on audit_log during nightly-rollup",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (audit_log.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add pool_wait_seconds metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the discovery folder."
+  },
+  {
+   "repo": "tigerlily/payments",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on product_variants during nightly-rollup",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (product_variants.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/search-api",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_reindex_retry fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the order_items cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump spring-boot from 2.22.3 to 2.13.0",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/checkout-api",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to payments",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/edge-proxy",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_merge_concurrent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the payment_attempts cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/search-api",
+   "labels": "{\"enhancement\"}",
+   "title": "Support pagination on /v1/search/suggest",
+   "body": "Clients request the full list and it is now over 5k items for large accounts. Add cursor pagination with a default page size of 50."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_reserve_timeout fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the orders cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/scheduler",
+   "labels": "{\"enhancement\"}",
+   "title": "Support pagination on /v1/items",
+   "body": "Clients request the full list and it is now over 5k items for large accounts. Add cursor pagination with a default page size of 50."
+  },
+  {
+   "repo": "tigerlily/inventory",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add consumer_lag metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the fulfillment folder."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_refund_idempotent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the sessions cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/cart-service",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key DRAIN_WAIT",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/billing",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump jackson from 2.9.1 to 3.22.8",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/search-api",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from heartbeat",
+   "body": "This log line fires on every request and accounts for 18% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/checkout-api",
+   "labels": "{\"documentation\"}",
+   "title": "Document /v1/checkout/{id}/confirm error responses",
+   "body": "The OpenAPI spec lists 200 and 500 only. Add 400, 404, 409, and 429 with example bodies."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump spring-boot from 1.19.3 to 1.13.6",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/scheduler",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add gc_pause_seconds metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the platform-infra folder."
+  },
+  {
+   "repo": "tigerlily/checkout-api",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key CACHE_TTL",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on sessions during nightly-rollup",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (sessions.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/auth-service",
+   "labels": "{\"enhancement\"}",
+   "title": "Support pagination on /oauth/introspect",
+   "body": "Clients request the full list and it is now over 5k items for large accounts. Add cursor pagination with a default page size of 50."
+  },
+  {
+   "repo": "tigerlily/catalog-api",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on orders during nightly-rollup",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (orders.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/catalog-api",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to redis-cache",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_capture_retry fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the sessions cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/search-api",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for redis-cache dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to redis-cache so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from cache refresh",
+   "body": "This log line fires on every request and accounts for 34% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/inventory",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_capture_concurrent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the audit_log cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add cache_hit_ratio metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the data-infra folder."
+  },
+  {
+   "repo": "tigerlily/auth-service",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for postgres dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to postgres so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from readiness probe",
+   "body": "This log line fires on every request and accounts for 17% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/auth-service",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to postgres",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/api-gateway",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from heartbeat",
+   "body": "This log line fires on every request and accounts for 20% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for postgres dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to postgres so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"maintenance\"}",
+   "title": "Upgrade Java runtime to latest LTS",
+   "body": "Current version reaches end of support next quarter. Test suite passes locally on the new version."
+  },
+  {
+   "repo": "tigerlily/payments",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump kafka-clients from 1.10.7 to 5.30.6",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/cart-service",
+   "labels": "{\"bug\",\"reliability\"}",
+   "title": "Graceful shutdown drops in-flight requests",
+   "body": "On SIGTERM we close the listener before the last requests finish. Add a 20s drain."
+  },
+  {
+   "repo": "tigerlily/cart-service",
+   "labels": "{\"enhancement\"}",
+   "title": "Support pagination on /healthz",
+   "body": "Clients request the full list and it is now over 5k items for large accounts. Add cursor pagination with a default page size of 50."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from request completed",
+   "body": "This log line fires on every request and accounts for 19% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/api-gateway",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump gin from 4.12.3 to 3.12.0",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to kafka",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from readiness probe",
+   "body": "This log line fires on every request and accounts for 13% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/cart-service",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add pool_wait_seconds metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the storefront folder."
+  },
+  {
+   "repo": "tigerlily/checkout-api",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on addresses during nightly-rollup",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (addresses.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/auth-service",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_reserve_concurrent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the audit_log cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/cart-service",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to catalog-api",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/inventory",
+   "labels": "{\"bug\",\"reliability\"}",
+   "title": "Graceful shutdown drops in-flight requests",
+   "body": "On SIGTERM we close the listener before the last requests finish. Add a 20s drain."
+  },
+  {
+   "repo": "tigerlily/api-gateway",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump jackson from 1.2.4 to 1.7.0",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add cache_hit_ratio metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the growth folder."
+  },
+  {
+   "repo": "tigerlily/scheduler",
+   "labels": "{\"documentation\"}",
+   "title": "Document /v1/items error responses",
+   "body": "The OpenAPI spec lists 200 and 500 only. Add 400, 404, 409, and 429 with example bodies."
+  },
+  {
+   "repo": "tigerlily/user-profile",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for redis-cache dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to redis-cache so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/checkout-api",
+   "labels": "{\"documentation\"}",
+   "title": "Document /v1/checkout/{id}/shipping error responses",
+   "body": "The OpenAPI spec lists 200 and 500 only. Add 400, 404, 409, and 429 with example bodies."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"documentation\"}",
+   "title": "Document /v1/recommendations/trending error responses",
+   "body": "The OpenAPI spec lists 200 and 500 only. Add 400, 404, 409, and 429 with example bodies."
+  },
+  {
+   "repo": "tigerlily/cart-service",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key RETRY_DELAY",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/payments",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add gc_pause_seconds metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the payments-platform folder."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to inventory",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump express from 5.2.8 to 5.9.5",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/payments",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to billing",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/payments",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add pool_wait_seconds metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the payments-platform folder."
+  },
+  {
+   "repo": "tigerlily/image-resizer",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to object-store",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_reindex_concurrent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the products cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/auth-service",
+   "labels": "{\"enhancement\"}",
+   "title": "Support pagination on /.well-known/jwks.json",
+   "body": "Clients request the full list and it is now over 5k items for large accounts. Add cursor pagination with a default page size of 50."
+  },
+  {
+   "repo": "tigerlily/scheduler",
+   "labels": "{\"maintenance\"}",
+   "title": "Upgrade Go runtime to latest LTS",
+   "body": "Current version reaches end of support next quarter. Test suite passes locally on the new version."
+  },
+  {
+   "repo": "tigerlily/search-api",
+   "labels": "{\"maintenance\"}",
+   "title": "Upgrade Python runtime to latest LTS",
+   "body": "Current version reaches end of support next quarter. Test suite passes locally on the new version."
+  },
+  {
+   "repo": "tigerlily/search-api",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_refund_concurrent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the payment_attempts cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/api-gateway",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for auth-service dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to auth-service so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/inventory",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_capture_concurrent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the product_variants cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/checkout-api",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on carts during nightly-rollup",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (carts.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/inventory",
+   "labels": "{\"maintenance\"}",
+   "title": "Upgrade Go runtime to latest LTS",
+   "body": "Current version reaches end of support next quarter. Test suite passes locally on the new version."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add consumer_lag metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the data-infra folder."
+  },
+  {
+   "repo": "tigerlily/inventory",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on orders during nightly-rollup",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (orders.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/search-api",
+   "labels": "{\"enhancement\"}",
+   "title": "Support pagination on /v1/search",
+   "body": "Clients request the full list and it is now over 5k items for large accounts. Add cursor pagination with a default page size of 50."
+  },
+  {
+   "repo": "tigerlily/checkout-api",
+   "labels": "{\"bug\",\"reliability\"}",
+   "title": "Graceful shutdown drops in-flight requests",
+   "body": "On SIGTERM we close the listener before the last requests finish. Add a 20s drain."
+  },
+  {
+   "repo": "tigerlily/inventory",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump jackson from 2.26.2 to 3.6.8",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/auth-service",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for redis-cache dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to redis-cache so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key POOL_TIMEOUT",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/inventory",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to kafka",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_capture_concurrent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the products cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/edge-proxy",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from cache refresh",
+   "body": "This log line fires on every request and accounts for 23% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/image-resizer",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to cdn",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/search-api",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to redis-cache",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add upstream_5xx_rate metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the discovery folder."
+  },
+  {
+   "repo": "tigerlily/user-profile",
+   "labels": "{\"enhancement\"}",
+   "title": "Support pagination on /healthz",
+   "body": "Clients request the full list and it is now over 5k items for large accounts. Add cursor pagination with a default page size of 50."
+  },
+  {
+   "repo": "tigerlily/api-gateway",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_rollup_concurrent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the price_history cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/search-api",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key RETRY_DELAY",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_refund_concurrent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the order_items cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add consumer_lag metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the growth folder."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on notifications_outbox during digest-builder",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (notifications_outbox.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"bug\",\"reliability\"}",
+   "title": "Graceful shutdown drops in-flight requests",
+   "body": "On SIGTERM we close the listener before the last requests finish. Add a 20s drain."
+  },
+  {
+   "repo": "tigerlily/auth-service",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump jackson from 4.8.0 to 5.20.9",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/checkout-api",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for payments dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to payments so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_merge_idempotent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the payments cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_rollup_idempotent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the notifications_outbox cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/user-profile",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key RETRY_DELAY",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/catalog-api",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from readiness probe",
+   "body": "This log line fires on every request and accounts for 28% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/checkout-api",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump tokio from 1.6.4 to 2.28.8",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/cart-service",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_merge_idempotent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the users cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"maintenance\"}",
+   "title": "Upgrade SQL runtime to latest LTS",
+   "body": "Current version reaches end of support next quarter. Test suite passes locally on the new version."
+  },
+  {
+   "repo": "tigerlily/search-api",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key DRAIN_WAIT",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/catalog-api",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_merge_timeout fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the addresses cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/payments",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for postgres dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to postgres so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/edge-proxy",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add pool_wait_seconds metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the platform-infra folder."
+  },
+  {
+   "repo": "tigerlily/user-profile",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on price_history during nightly-rollup",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (price_history.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/catalog-api",
+   "labels": "{\"enhancement\"}",
+   "title": "Support pagination on /healthz",
+   "body": "Clients request the full list and it is now over 5k items for large accounts. Add cursor pagination with a default page size of 50."
+  },
+  {
+   "repo": "tigerlily/api-gateway",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_merge_concurrent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the inventory_levels cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/user-profile",
+   "labels": "{\"documentation\"}",
+   "title": "Document /v1/users/{id}/addresses error responses",
+   "body": "The OpenAPI spec lists 200 and 500 only. Add 400, 404, 409, and 429 with example bodies."
+  },
+  {
+   "repo": "tigerlily/auth-service",
+   "labels": "{\"bug\",\"reliability\"}",
+   "title": "Graceful shutdown drops in-flight requests",
+   "body": "On SIGTERM we close the listener before the last requests finish. Add a 20s drain."
+  },
+  {
+   "repo": "tigerlily/search-api",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from request completed",
+   "body": "This log line fires on every request and accounts for 20% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/auth-service",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to redis-cache",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_capture_retry fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the carts cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump kafka-clients from 3.24.6 to 3.1.3",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/scheduler",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to kafka",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/image-resizer",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from request completed",
+   "body": "This log line fires on every request and accounts for 33% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/payments",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from readiness probe",
+   "body": "This log line fires on every request and accounts for 8% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add upstream_5xx_rate metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the data-infra folder."
+  },
+  {
+   "repo": "tigerlily/scheduler",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key CACHE_TTL",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/checkout-api",
+   "labels": "{\"documentation\"}",
+   "title": "Document /v1/checkout/{id}/tax error responses",
+   "body": "The OpenAPI spec lists 200 and 500 only. Add 400, 404, 409, and 429 with example bodies."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on order_items during nightly-rollup",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (order_items.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/catalog-api",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key CACHE_TTL",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"enhancement\"}",
+   "title": "Support pagination on /v1/items",
+   "body": "Clients request the full list and it is now over 5k items for large accounts. Add cursor pagination with a default page size of 50."
+  },
+  {
+   "repo": "tigerlily/checkout-api",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key RETRY_DELAY",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/recommendations",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on users during embed-query-log",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (users.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/api-gateway",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_merge_timeout fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the orders cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/edge-proxy",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump otel-sdk from 3.14.5 to 4.5.8",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"documentation\"}",
+   "title": "Document /v1/items error responses",
+   "body": "The OpenAPI spec lists 200 and 500 only. Add 400, 404, 409, and 429 with example bodies."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add pool_wait_seconds metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the data-infra folder."
+  },
+  {
+   "repo": "tigerlily/edge-proxy",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump tokio from 1.1.0 to 3.16.6",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key CACHE_TTL",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/user-profile",
+   "labels": "{\"observability\",\"good-first-issue\"}",
+   "title": "Add upstream_5xx_rate metric to dashboard",
+   "body": "We alert on it but the dashboard does not show it, so on-call has to query directly. Add a panel under the identity folder."
+  },
+  {
+   "repo": "tigerlily/payments",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from cache refresh",
+   "body": "This log line fires on every request and accounts for 40% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/catalog-api",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key POOL_TIMEOUT",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/api-gateway",
+   "labels": "{\"bug\",\"reliability\"}",
+   "title": "Graceful shutdown drops in-flight requests",
+   "body": "On SIGTERM we close the listener before the last requests finish. Add a 20s drain."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"bug\",\"flaky-test\",\"ci-cd\"}",
+   "title": "Flaky test: test_reindex_concurrent fails intermittently in CI",
+   "body": "Fails roughly 1 in 20 runs with a timeout. Likely a shared fixture racing with the orders cleanup. Needs isolation."
+  },
+  {
+   "repo": "tigerlily/db-ops",
+   "labels": "{\"tech-debt\"}",
+   "title": "Rename misleading config key CACHE_TTL",
+   "body": "The name suggests seconds but the value is milliseconds. Rename with a deprecation shim."
+  },
+  {
+   "repo": "tigerlily/checkout-api",
+   "labels": "{\"performance\",\"database\"}",
+   "title": "Slow query on order_items during nightly-rollup",
+   "body": "p99 over 2s when the job runs. Explain plan shows a sequential scan; an index on (order_items.updated_at) should fix it."
+  },
+  {
+   "repo": "tigerlily/catalog-api",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump tokio from 4.21.6 to 4.3.7",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/image-resizer",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump express from 1.29.6 to 2.17.6",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/notifications",
+   "labels": "{\"dependencies\"}",
+   "title": "Bump otel-sdk from 2.19.3 to 5.20.7",
+   "body": "Automated dependency update. Changelog reviewed, no breaking changes flagged."
+  },
+  {
+   "repo": "tigerlily/order-service",
+   "labels": "{\"enhancement\",\"resilience\"}",
+   "title": "Retry budget for calls to kafka",
+   "body": "We retry 3 times with fixed delay. Move to jittered exponential backoff with a per-request budget."
+  },
+  {
+   "repo": "tigerlily/scheduler",
+   "labels": "{\"bug\",\"reliability\"}",
+   "title": "Graceful shutdown drops in-flight requests",
+   "body": "On SIGTERM we close the listener before the last requests finish. Add a 20s drain."
+  },
+  {
+   "repo": "tigerlily/catalog-api",
+   "labels": "{\"observability\",\"cost\"}",
+   "title": "Reduce log volume from cache refresh",
+   "body": "This log line fires on every request and accounts for 26% of our ingest bill. Sample it or move to debug."
+  },
+  {
+   "repo": "tigerlily/cart-service",
+   "labels": "{\"enhancement\",\"reliability\"}",
+   "title": "Add health check for postgres dependency",
+   "body": "Readiness currently only checks the process is up. Include a lightweight ping to postgres so we stop receiving traffic when it is unreachable."
+  },
+  {
+   "repo": "tigerlily/api-gateway",
+   "labels": "{\"documentation\"}",
+   "title": "Document /v1/items error responses",
+   "body": "The OpenAPI spec lists 200 and 500 only. Add 400, 404, 409, and 429 with example bodies."
+  }
+ ],
+ "routine_closed_fraction": 0.494,
+ "routine_closed_days": [
+  1,
+  30
+ ],
+ "repo_number_start": {
+  "tigerlily/image-resizer": 867,
+  "tigerlily/db-ops": 606,
+  "tigerlily/search-api": 499,
+  "tigerlily/inventory": 820,
+  "tigerlily/checkout-api": 937,
+  "tigerlily/edge-proxy": 567,
+  "tigerlily/payments": 365,
+  "tigerlily/api-gateway": 709,
+  "tigerlily/notifications": 600,
+  "tigerlily/catalog-api": 379,
+  "tigerlily/order-service": 940,
+  "tigerlily/recommendations": 871,
+  "tigerlily/cart-service": 368,
+  "tigerlily/auth-service": 255,
+  "tigerlily/scheduler": 453,
+  "tigerlily/billing": 646,
+  "tigerlily/user-profile": 241
+ },
+ "comments": {
+  "generic": [
+   [
+    "Duplicate of an earlier issue? Checking.",
+    45
+   ],
+   [
+    "Taking this one.",
+    45
+   ],
+   [
+    "Deprioritized until after the release freeze.",
+    43
+   ],
+   [
+    "Reproduced locally, fix is small.",
+    41
+   ],
+   [
+    "Agreed on the approach in the sync. Splitting the second half into a follow-up issue.",
+    34
+   ],
+   [
+    "Merged, will close after the next deploy.",
+    34
+   ],
+   [
+    "Closing. Metrics look good since the deploy and the alert has not fired again.",
+    33
+   ],
+   [
+    "Bumping priority; this is the second time this pattern has bitten us this quarter.",
+    30
+   ],
+   [
+    "Verified in staging with the load profile from the incident. Behavior matches expectations.",
+    27
+   ]
+  ],
+  "count_dist_incident": {
+   "1": 14,
+   "2": 30,
+   "3": 32,
+   "4": 15,
+   "5": 13
+  },
+  "count_dist_routine": {
+   "0": 142,
+   "1": 208
+  },
+  "hours_after_issue": [
+   1,
+   636
+  ]
+ }
+}
