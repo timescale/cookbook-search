@@ -1,9 +1,7 @@
 import Reveal from "reveal.js";
-import RevealHighlight from "reveal.js/plugin/highlight";
 import RevealNotes from "reveal.js/plugin/notes";
 
 import "reveal.js/reveal.css";
-import "reveal.js/plugin/highlight/monokai.css";
 import "./theme.css";
 
 const deck = new Reveal({
@@ -24,7 +22,7 @@ const deck = new Reveal({
   totalTime: 3000,
   pdfSeparateFragments: false,
   pdfMaxPagesPerSlide: 1,
-  plugins: [RevealHighlight, RevealNotes],
+  plugins: [RevealNotes],
 });
 
 deck.initialize();
