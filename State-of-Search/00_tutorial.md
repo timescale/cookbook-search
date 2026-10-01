@@ -178,6 +178,42 @@ docker compose run --rm app python -m app.demo tour
 docker compose up -d app
 ```
 
+The first command runs five searches in the terminal. Each step tells you:
+
+- the question that the step is designed to answer;
+- the exact query sent to the search methods;
+- which methods are running and which optional methods were skipped;
+- what each method does in plain language;
+- how to interpret its score; and
+- what difference to look for in the returned rows.
+
+For example, the typo-tolerance step begins like this (timings and returned
+rows will vary):
+
+```text
+STEP 2 OF 5: Typo tolerance
+Goal: See how character similarity helps when a person misspells important words.
+Query being searched: 'conection pool exaustion'
+Methods being compared: trigram, fts
+What to look for: Trigram search can recover the intended topic; full-text search
+may struggle because the misspelled words are different tokens.
+
+Method: Trigram similarity [trigram]
+  What is running: Breaks text into overlapping three-character pieces so
+  misspellings can still match.
+  Client-observed retrieval time: 12.3 ms
+  How to read the score: Higher scores mean the query and result share more
+  three-character pieces.
+  Results returned: 5
+```
+
+The listed time measures retrieval plus the application's database or search
+engine round trip. For semantic methods, creation of a new query embedding
+happens before that timer. Treat the timings as observations from your local
+machine, not as a universal benchmark. Also compare the order and content of
+the rows: BM25, vector similarity, and hybrid RRF scores use different scales,
+so their raw numbers should not be compared with one another.
+
 Open <http://127.0.0.1:8501>. The UI shows only methods verified as available in
 the running environment.
 
