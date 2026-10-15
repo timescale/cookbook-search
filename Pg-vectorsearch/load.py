@@ -33,6 +33,19 @@ def connection_url() -> str:
     return url
 
 
+def connect_db() -> psycopg.Connection:
+    """Connect to PostgreSQL with a concise configuration error."""
+    try:
+        return psycopg.connect(connection_url())
+    except psycopg.OperationalError:
+        raise SystemExit(
+            "Could not connect to PostgreSQL. Check DATABASE_URL in "
+            "Pg-vectorsearch/.env and make sure its host is reachable from "
+            "this shell. A host such as 'db' usually only works inside its "
+            "Docker network."
+        ) from None
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rows", type=int, default=1200)
@@ -41,7 +54,7 @@ def main() -> None:
     args = parser.parse_args()
     events = generate_events(args.rows, args.seed)
 
-    with psycopg.connect(connection_url()) as conn:
+    with connect_db() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT to_regclass('incident_events')")
             if cur.fetchone()[0] is None:

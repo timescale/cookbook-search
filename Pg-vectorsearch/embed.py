@@ -19,10 +19,9 @@ from __future__ import annotations
 import argparse
 import os
 
-import psycopg
 from openai import OpenAI
 
-from load import HERE, connection_url
+from load import HERE, connect_db
 
 
 MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
@@ -41,7 +40,7 @@ def main() -> None:
 
     client = OpenAI()
     embedded = 0
-    with psycopg.connect(connection_url()) as conn:
+    with connect_db() as conn:
         while args.limit is None or embedded < args.limit:
             batch_size = min(args.batch_size, args.limit - embedded) if args.limit else args.batch_size
             with conn.cursor() as cur:

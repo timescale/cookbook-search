@@ -28,7 +28,8 @@ Start with the [Hybrid Search tutorial](./Hybrid-search/README.md).
 Choose this project to try the PRISM approximate nearest-neighbor index without
 building PostgreSQL or the extension locally. It uses a PostgreSQL 18 Tiger
 Cloud service, a deterministic synthetic incident dataset, OpenAI embeddings,
-and a small Python search CLI.
+and a small Python search CLI. The walkthrough starts from zero by creating a
+dedicated free Tiger Cloud service with Tiger CLI.
 
 Start with the [pg_vectorsearch tutorial](./Pg-vectorsearch/README.md).
 
@@ -50,7 +51,7 @@ Requirements vary by project:
 |---|---:|---:|---:|
 | PostgreSQL with the documented search extensions | Required | Tiger Cloud, PostgreSQL 18+ | Provided by Docker Compose |
 | Docker | Optional | Not required | Required for the full demo |
-| Python | 3.9+ | 3.10+ | 3.11+ inside the app image |
+| Python | 3.9+ | 3.11+ | 3.11+ inside the app image |
 | Node.js | Not required | Not required | 20.19.x or 22.12+ for the slides |
 | OpenAI API key | Required for embeddings | Required for embeddings and queries | Required for semantic-search preparation and uncached query embeddings |
 | Elasticsearch | Not required | Not required | Optional Compose profile |

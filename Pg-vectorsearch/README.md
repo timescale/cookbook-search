@@ -25,69 +25,184 @@ stored event uses different wording.
 
 ### What You'll Need
 
-- **A Tiger Cloud account** — [sign up or log in](https://console.cloud.timescale.com/) and create a PostgreSQL 18 service where `pg_vectorsearch` is available.
-- **PostgreSQL 18 with pg_vectorsearch** — the extension currently requires PostgreSQL 18 or later and is alpha software. The verification below checks availability before changing the database.
-- **Python 3.10+** — runs the data loader, embedding script, and search CLI. Download it from [python.org](https://www.python.org/downloads/).
-- **psql** — runs the SQL files against Tiger Cloud. Install it from the [PostgreSQL downloads page](https://www.postgresql.org/download/), or use Tiger Cloud's SQL editor for SQL-only steps.
-- **An OpenAI API key** — generates 1,536-dimensional embeddings with `text-embedding-3-small`. Create one at [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
-- **uv** — this tutorial uses [uv](https://docs.astral.sh/uv/) to manage Python packages. [pip](https://pip.pypa.io/) and [conda](https://docs.conda.io/) also work.
+- **A free Tiger Cloud account** — [sign up or log in](https://console.cloud.timescale.com/). The recommended path below creates a dedicated free service, so you do not need an existing database.
+- **Git** — downloads this repository. Install it from [git-scm.com](https://git-scm.com/downloads) if `git --version` does not work.
+- **Python 3.11+** — runs the data loader, embedding script, and search CLI. Download it from [python.org](https://www.python.org/downloads/).
+- **An OpenAI API key** — generates 1,536-dimensional embeddings with `text-embedding-3-small`. Create one at [platform.openai.com/api-keys](https://platform.openai.com/api-keys). Embedding the sample makes a small billable API request.
+- **uv** — this tutorial uses [uv](https://docs.astral.sh/uv/getting-started/installation/) to create a reproducible Python environment. You do not need to know Python packaging beforehand.
+- **Tiger CLI** — creates the free database service and runs SQL without requiring `psql`. You will install it below.
 
-### Option 1: Create a Tiger Cloud service (recommended)
+### Download the Tutorial
 
-1. Open the [Tiger Cloud console](https://console.cloud.timescale.com/).
-2. Create a PostgreSQL 18 service that includes `pg_vectorsearch`.
-3. When the service is running, copy its connection string and save the
-   password shown by the console. The connection string should use TLS with
-   `sslmode=require`.
+If you have not cloned this repository, download it and enter the tutorial
+directory. Run every remaining command from `Pg-vectorsearch` unless the guide
+says otherwise.
 
-**Check that pg_vectorsearch is available** — replace the example URL with the
-connection string from Tiger Cloud:
+**Clone the repository** — create a local copy and move into this cookbook:
 
 ```bash
-psql "postgresql://tsdbadmin:YOUR_PASSWORD@YOUR_HOST:5432/tsdb?sslmode=require" \
-  -c "SELECT name, default_version FROM pg_available_extensions WHERE name = 'pg_vectorsearch';"
+git clone https://github.com/timescale/cookbook-search.git
+cd cookbook-search/Pg-vectorsearch
 ```
 
-You should see one row named `pg_vectorsearch`. If the query returns no rows,
-that service does not have the extension installed; use a PostgreSQL 18 Tiger
-Cloud service where it is available or contact Tiger Data support before
-continuing.
+You should now be in the folder containing `README.md`, `setup.sql`, and
+`load.py`.
 
-### Option 2: Use an existing Tiger Cloud service
+### Option 1: Create a Free Tiger Cloud Service (Recommended)
+
+This path starts with a new, isolated database. A free Tiger Cloud service uses
+shared compute and is enough for the 1,200-row tutorial. Creating a dedicated
+service also means you can experiment or clean up without touching another
+application's data.
+
+1. **Install Tiger CLI.** Choose the command for your operating system.
+
+   **macOS, Linux, or WSL** — run the official installer:
+
+   ```bash
+   curl -fsSL https://cli.tigerdata.com | sh
+   ```
+
+   **Windows PowerShell** — run the Windows installer:
+
+   ```powershell
+   irm https://cli.tigerdata.com/install.ps1 | iex
+   ```
+
+   Close and reopen your terminal if the installer asks you to refresh your
+   shell.
+
+2. **Verify the installation** — confirm the `tiger` command is available:
+
+   ```bash
+   tiger version
+   ```
+
+   You should see a Tiger CLI version table. If the shell says `tiger` was not
+   found, open a new terminal and retry the command.
+
+3. **Sign in to Tiger Cloud** — authenticate with the free account you created:
+
+   ```bash
+   tiger auth login
+   ```
+
+   The command opens a browser. Sign in, authorize the CLI, and select a Tiger
+   Cloud project if prompted. The CLI stores the session securely; it does not
+   add credentials to this repository. For a remote terminal without a browser,
+   use `tiger auth login --headless` instead.
+
+4. **Verify your login** — list the services in the selected project:
+
+   ```bash
+   tiger service list
+   ```
+
+   An empty table is fine for a new account. An authentication error means the
+   login did not complete; rerun `tiger auth login`.
+
+5. **Create a dedicated free service** — request shared CPU and memory:
+
+   ```bash
+   tiger service create --name pg-vectorsearch-tutorial --cpu shared --memory shared --region us-east-1 --environment DEV
+   ```
+
+   Provisioning normally takes less than a minute. The command waits until the
+   service is ready, saves its generated database password in secure local
+   credential storage, and makes it the CLI's default service. If your account
+   reports a free-service limit, use an existing compatible service with Option
+   2 or remove an unused service in the Tiger Cloud console.
+
+6. **Check database connectivity** — verify the new service accepts connections:
+
+   ```bash
+   tiger db ping
+   ```
+
+   You should see that the server is accepting connections.
+
+7. **Verify PostgreSQL and pg_vectorsearch** — check the two requirements before
+   creating any objects:
+
+   ```bash
+   tiger db query --command "
+   SELECT current_setting('server_version') AS server_version;
+   SELECT name, default_version
+   FROM pg_available_extensions
+   WHERE name = 'pg_vectorsearch';"
+   ```
+
+   The first result should report PostgreSQL 18 or later. The second should
+   contain one row named `pg_vectorsearch`. Your new service is ready for the
+   tutorial.
+
+### Option 2: Use an Existing Tiger Cloud Service
 
 An existing service works when it runs PostgreSQL 18 or later and lists
 `pg_vectorsearch` in `pg_available_extensions`. The cookbook creates its own
 `incident_events` table and does not alter other application tables.
 
-**Check the server and extension** — run both checks before using an existing
-service:
+1. **Find the service ID** — list the services in your current project:
 
-```bash
-psql "$DATABASE_URL" -c "SHOW server_version;"
-psql "$DATABASE_URL" \
-  -c "SELECT name, default_version FROM pg_available_extensions WHERE name = 'pg_vectorsearch';"
-```
+   ```bash
+   tiger service list
+   ```
 
-The first command should report PostgreSQL 18 or later, and the second should
-return one extension row. You are now ready to configure the local scripts.
+   Copy the ID from the row for the service you want to use.
+
+2. **Select the existing service** — replace `<SERVICE_ID>` with the value in
+   the list:
+
+   ```bash
+   tiger config set service_id <SERVICE_ID>
+   ```
+
+   Tiger CLI should confirm that it saved the configuration value. Commands
+   without an explicit service ID now target this service.
+
+3. **Check the server and extension** — run both checks before continuing:
+
+   ```bash
+   tiger db query --command "
+   SELECT current_setting('server_version') AS server_version;
+   SELECT name, default_version
+   FROM pg_available_extensions
+   WHERE name = 'pg_vectorsearch';"
+   ```
+
+   The first result should report PostgreSQL 18 or later, and the second should
+   return one extension row. If either check fails, create a new free service
+   with Option 1 instead.
 
 ## Step 1: Configure the Connection
 
 Keep credentials in a local `.env` file. The repository ignores `.env`, while
-`.env.example` documents every required setting.
+`.env.example` documents every required setting. This file connects the Python
+scripts to the same service that Tiger CLI selected above.
 
 **Create your local configuration** — copy the template:
 
 ```bash
-cd Pg-vectorsearch
 cp .env.example .env
 ```
 
-The command creates `Pg-vectorsearch/.env`. Open it in your editor and replace
-both placeholders.
+The command creates `Pg-vectorsearch/.env` without changing the example
+template.
+
+**Get the database URL** — ask Tiger CLI for the default service's connection
+string:
+
+```bash
+tiger db uri --with-password
+```
+
+The output starts with `postgresql://` and ends with `sslmode=require`. It
+contains the generated database password, so treat the entire URL as a secret.
+Copy it, but do not paste it into chat, an issue, or a committed file.
 
 **Set the Tiger Cloud and OpenAI credentials** — keep TLS enabled in the
-connection string:
+connection string. Open `.env` in any text editor and replace the two
+placeholder values:
 
 ```dotenv
 DATABASE_URL=postgresql://tsdbadmin:your-password@your-host:5432/tsdb?sslmode=require
@@ -95,35 +210,47 @@ OPENAI_API_KEY=your-key-here
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 ```
 
-Do not commit this file or paste its contents into logs or screenshots.
+Save the file. Do not commit it or include it in logs and screenshots. The next
+step installs the local Python tools and verifies these settings without
+printing either secret.
 
-**Verify the saved connection** — load `.env` in your shell without printing
-its values, then ask PostgreSQL for the current user and database:
-
-```bash
-set -a
-source .env
-set +a
-psql "$DATABASE_URL" -c "SELECT current_user, current_database();"
-```
-
-You should see your Tiger Cloud role (normally `tsdbadmin`) and database. With
-the secure connection working, the next step installs the local Python tools.
+> **Keep the URL intact:** passwords sometimes contain punctuation. Paste the
+> complete value returned by Tiger CLI; do not add quotes or edit individual
+> URL characters.
 
 ## Step 2: Install the Python Dependencies
 
-uv creates an isolated `.venv` and installs the three packages listed in
-`requirements.txt`. You do not need to activate the environment when using
-`uv run`.
+uv creates an isolated `.venv` and installs the exact package versions recorded
+in `uv.lock`. The project dependencies are declared in `pyproject.toml`, while
+`requirements.txt` provides a pip-compatible alternative. You do not need to
+activate the environment when using `uv run`.
 
-**Create the environment** — install the pinned dependency ranges:
+If `uv --version` already works, skip directly to creating the environment.
+Otherwise, install uv for your operating system.
+
+**Install uv on macOS, Linux, or WSL** — run the official installer:
 
 ```bash
-uv venv
-uv pip install -r requirements.txt
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-You should see uv complete without dependency errors.
+**Install uv on Windows PowerShell** — run the Windows installer:
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+Close and reopen the terminal if `uv --version` is not immediately available.
+
+**Create the environment** — reproduce the committed dependency set:
+
+```bash
+uv sync --locked
+```
+
+You should see uv create `.venv` and complete without dependency errors. If
+`uv` reports that the lockfile needs updating after an intentional dependency
+change, run `uv lock`, review `uv.lock`, and repeat `uv sync --locked`.
 
 **Verify imports** — make sure every runtime package is available:
 
@@ -131,7 +258,22 @@ You should see uv complete without dependency errors.
 uv run python -c "import openai, psycopg, dotenv; print('Python dependencies ready')"
 ```
 
-The command should print `Python dependencies ready`. Next, create the vector
+The command should print `Python dependencies ready`. Now verify that the
+values in `.env` let Python connect to Tiger Cloud.
+
+**Verify the saved database URL** — connect through the same helper used by all
+three Python scripts:
+
+```bash
+uv run python -c "from load import connect_db; c = connect_db(); print(c.execute('SELECT current_user, current_database()').fetchone()); c.close()"
+```
+
+You should see a tuple containing `tsdbadmin` and `tsdb`. If you see an
+authentication error, rerun `tiger db uri --with-password` and replace the
+entire `DATABASE_URL` value in `.env`. If the error mentions host `db`, the file
+still contains a Docker-only URL rather than the Tiger Cloud URL.
+
+With the Python environment and database connection ready, create the vector
 type and table in Tiger Cloud.
 
 ## Step 3: Create the Extension and Table
@@ -143,7 +285,7 @@ method. This example uses `vec32(1536)` because
 **Run the idempotent schema setup** — create the extension and table:
 
 ```bash
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f setup.sql
+tiger db query --file setup.sql
 ```
 
 You should see `CREATE EXTENSION`, `CREATE TABLE`, and `ALTER TABLE` on the first
@@ -153,7 +295,7 @@ run. `NOTICE` messages saying objects already exist are safe on later runs.
 schema:
 
 ```bash
-psql "$DATABASE_URL" -P pager=off -c "
+tiger db query --command "
 SELECT pg_vectorsearch_version();
 SELECT column_name, data_type, udt_name
 FROM information_schema.columns
@@ -188,7 +330,7 @@ command preserves the existing rows and explains how to replace them.
 **Check the data distribution** — confirm the total and incident counts:
 
 ```bash
-psql "$DATABASE_URL" -P pager=off -c "
+tiger db query --command "
 SELECT count(*) AS total_events,
        count(*) FILTER (WHERE incident_id IS NOT NULL) AS incident_events,
        count(DISTINCT incident_family) AS incident_families
@@ -219,10 +361,15 @@ Progress is printed after each batch, ending with
 `Done! Added 1,200 embeddings.` The exact API cost depends on current OpenAI
 pricing and the generated text length.
 
+If OpenAI reports an authentication error, verify `OPENAI_API_KEY` in `.env`
+and rerun the command; completed rows remain stored. If it reports an
+unsupported dimensions parameter, use a `text-embedding-3` model—the scripts
+request 1,536 dimensions to match the database column.
+
 **Verify vector coverage and dimensions** — all rows should be populated:
 
 ```bash
-psql "$DATABASE_URL" -P pager=off -c "
+tiger db query --command "
 SELECT count(*) AS events,
        count(embedding) AS embedded_events,
        min(vec32_dims(embedding)) AS dimensions
@@ -242,15 +389,17 @@ because its automatic sizing uses the table's row count.
 **Create every search index** — add filter, full-text, and PRISM indexes:
 
 ```bash
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f indexes.sql
+tiger db query --file indexes.sql
 ```
 
-You should see four `CREATE INDEX` results on the first run.
+You should see five `CREATE INDEX` results on the first run: three B-tree
+indexes for time and metadata filters, one GIN full-text index, and one PRISM
+vector index.
 
 **Verify the PRISM access method** — inspect the catalog directly:
 
 ```bash
-psql "$DATABASE_URL" -P pager=off -c "
+tiger db query --command "
 SELECT c.relname AS index_name, a.amname AS access_method
 FROM pg_class AS c
 JOIN pg_am AS a ON a.oid = c.relam
@@ -323,7 +472,7 @@ index are maintained automatically by PostgreSQL.
 call:
 
 ```bash
-psql "$DATABASE_URL" -P pager=off -c "
+tiger db query --command "
 SELECT occurred_at, service, incident_id, content
 FROM incident_events
 WHERE content_tsv @@ websearch_to_tsquery('english', 'SQLSTATE 53300');"
@@ -336,7 +485,7 @@ out” may not match; semantic search handles that paraphrase.
 **Find Kubernetes terminology** — search for the literal failure modes:
 
 ```bash
-psql "$DATABASE_URL" -P pager=off -c "
+tiger db query --command "
 SELECT service, incident_id, content
 FROM incident_events
 WHERE content_tsv @@ websearch_to_tsquery('english', 'OOMKilled OR CrashLoopBackOff');"
@@ -364,13 +513,15 @@ how PostgreSQL executed the request.
 **Inspect resolved index settings** — see the values PRISM chose at build time:
 
 ```bash
-psql "$DATABASE_URL" -P pager=off \
-  -c "SELECT * FROM prism_index_settings('incident_events_embedding_prism_idx');"
+tiger db query --command "SELECT * FROM prism_index_settings('incident_events_embedding_prism_idx');"
 ```
 
 You should see settings including the vector dimension, cosine metric, number
 of lists, and effective `nprobe`. Keep the automatic defaults until recall and
 latency measurements justify a change.
+
+You have now created a free cloud database, loaded and embedded a reproducible
+dataset, built a PRISM index, and tested semantic plus exact keyword search.
 
 ## Going Further
 
@@ -389,7 +540,7 @@ same seed:
 ```bash
 uv run python load.py --rows 10000 --truncate
 uv run python embed.py
-psql "$DATABASE_URL" -c "REINDEX INDEX incident_events_embedding_prism_idx;"
+tiger db query --command "REINDEX INDEX incident_events_embedding_prism_idx;"
 ```
 
 The loader reports 10,000 rows, the embedder fills every vector, and `REINDEX`
@@ -419,8 +570,7 @@ complete rebuild.
 append:
 
 ```bash
-psql "$DATABASE_URL" \
-  -c "CALL prism_rebalance('incident_events_embedding_prism_idx');"
+tiger db query --command "CALL prism_rebalance('incident_events_embedding_prism_idx');"
 ```
 
 PostgreSQL should report `CALL`. Measure recall before and after maintenance on
@@ -434,12 +584,44 @@ Tiger Cloud service and extension available for other databases.
 **Remove cookbook data** — this is destructive and cannot be undone without a
 backup:
 
-```sql
-DROP TABLE IF EXISTS incident_events;
+```bash
+tiger db query --command "DROP TABLE IF EXISTS incident_events;"
 ```
 
 PostgreSQL should report `DROP TABLE`. Run `setup.sql`, `load.py`, `embed.py`,
 and `indexes.sql` to recreate the example.
+
+### Pause or Delete the Tutorial Service
+
+You can pause the service when you are finished and start it again later. If
+you no longer need any of its data, delete it from Tiger Cloud instead.
+
+**Find the tutorial service ID** — locate the row named
+`pg-vectorsearch-tutorial`:
+
+```bash
+tiger service list
+```
+
+Copy its service ID before running either command below.
+
+**Pause the service** — preserve its data while making it unavailable:
+
+```bash
+tiger service stop <SERVICE_ID>
+```
+
+Tiger CLI should report that the service is inactive. Run
+`tiger service start <SERVICE_ID>` when you want to resume.
+
+**Delete the service permanently** — remove the database and all of its data:
+
+```bash
+tiger service delete <SERVICE_ID>
+```
+
+Tiger CLI asks you to type the service ID before deleting anything. This cannot
+be undone, so use the pause command if you may want the tutorial data later.
 
 ## Current Limitations
 
@@ -452,11 +634,11 @@ and `indexes.sql` to recreate the example.
 
 ## What's Next
 
-- **Measure recall** — generate exact nearest-neighbor ground truth and compare it with several `prism.nprobe` values.
-- **Expand the dataset** — add incident families and routine templates to `generate_data.py`, then regenerate and re-embed the sample.
-- **Add hybrid ranking** — combine semantic results with PostgreSQL full-text scores using Reciprocal Rank Fusion.
-- **Integrate an application** — call the parameterized query in `search.py` from an API, support tool, or incident-response interface.
-- **Use existing pgvector data** — install `pg_vectorsearch` beside `vector` and build PRISM directly on compatible `vector` or `halfvec` columns without rewriting them.
+- **Measure recall** — generate exact nearest-neighbor ground truth and compare it with several `prism.nprobe` values using the [pg_vectorsearch tuning guide](https://github.com/timescale/pg_vectorsearch/blob/main/docs/tuning.md).
+- **Expand the dataset** — add incident families and routine templates to [`generate_data.py`](./generate_data.py), then regenerate and re-embed the sample.
+- **Add hybrid ranking** — combine semantic results with PostgreSQL full-text scores using Reciprocal Rank Fusion, following the repository's [Hybrid Search tutorial](../Hybrid-search/README.md).
+- **Integrate an application** — call the parameterized query in [`search.py`](./search.py) from an API, support tool, or incident-response interface.
+- **Use existing pgvector data** — follow the upstream [existing pgvector tables guide](https://github.com/timescale/pg_vectorsearch#existing-pgvector-tables) to build PRISM on compatible `vector` or `halfvec` columns without rewriting them.
 
 ## Resources
 
@@ -464,5 +646,6 @@ and `indexes.sql` to recreate the example.
 - [pg_vectorsearch tuning guide](https://github.com/timescale/pg_vectorsearch/blob/main/docs/tuning.md) — `nprobe`, index parameters, query behavior, and inspection functions.
 - [Announcing pg_vectorsearch](https://www.tigerdata.com/blog/announcing-pg_vectorsearch-scalable-open-source-vector-search-postgresql) — PRISM design, benchmark context, and current limitations.
 - [Tiger Cloud](https://www.tigerdata.com/cloud) — managed PostgreSQL for the database used by this cookbook.
-- [Tiger Cloud connection details](https://www.tigerdata.com/docs/use-timescale/latest/integrations/find-connection-details) — where to find the host, port, database, user, and password.
+- [Tiger CLI](https://github.com/timescale/tiger-cli) — installs the `tiger` command used to create the free service and execute SQL.
+- [Tiger Cloud connection details](https://www.tigerdata.com/docs/integrate/find-connection-details) — where to find the host, port, database, user, and password.
 - [OpenAI embeddings guide](https://platform.openai.com/docs/guides/embeddings) — embedding concepts and API usage.

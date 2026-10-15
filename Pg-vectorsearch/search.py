@@ -16,11 +16,11 @@ from __future__ import annotations
 
 import argparse
 import os
+import re
 
-import psycopg
 from openai import OpenAI
 
-from load import HERE, connection_url
+from load import HERE, connect_db
 
 
 MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
@@ -34,6 +34,12 @@ WHERE embedding IS NOT NULL
 ORDER BY embedding <=> %s::vec32
 LIMIT %s
 """
+VECTOR_LITERAL_RE = re.compile(r"'\[[^]]+\]'::vec32")
+
+
+def display_plan_line(line: str) -> str:
+    """Hide the generated vector while keeping the useful EXPLAIN details."""
+    return VECTOR_LITERAL_RE.sub("<query-vector>::vec32", line)
 
 
 def main() -> None:
@@ -51,16 +57,16 @@ def main() -> None:
     if not os.getenv("OPENAI_API_KEY"):
         parser.error(f"Set OPENAI_API_KEY in {HERE / '.env'}")
 
-    print(f"Embedding query with {MODEL}...", flush=True)
-    response = OpenAI().embeddings.create(
-        model=MODEL,
-        input=args.query,
-        dimensions=DIMENSIONS,
-    )
-    query_vector = str(response.data[0].embedding)
-    params = (query_vector, args.service, args.service, query_vector, args.limit)
+    with connect_db() as conn:
+        print(f"Embedding query with {MODEL}...", flush=True)
+        response = OpenAI().embeddings.create(
+            model=MODEL,
+            input=args.query,
+            dimensions=DIMENSIONS,
+        )
+        query_vector = str(response.data[0].embedding)
+        params = (query_vector, args.service, args.service, query_vector, args.limit)
 
-    with psycopg.connect(connection_url()) as conn:
         with conn.cursor() as cur:
             if args.nprobe is not None:
                 cur.execute("SELECT set_config('prism.nprobe', %s, true)", (str(args.nprobe),))
@@ -68,7 +74,7 @@ def main() -> None:
                 cur.execute("EXPLAIN (ANALYZE, BUFFERS, COSTS OFF) " + SEARCH_SQL, params)
                 print("\nQuery plan:")
                 for line, in cur.fetchall():
-                    print(line)
+                    print(display_plan_line(line))
             cur.execute(SEARCH_SQL, params)
             rows = cur.fetchall()
 

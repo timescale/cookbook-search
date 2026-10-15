@@ -5,7 +5,8 @@
 -- vendor, or employee information.
 --
 -- Usage:
---   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f setup.sql
+--   tiger db query --file setup.sql
+--   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f setup.sql  -- alternative
 
 -- 1. Extension -----------------------------------------------------------
 

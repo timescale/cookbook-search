@@ -1,6 +1,7 @@
 -- Search indexes for the Tiger Cloud pg_vectorsearch cookbook.
 -- Run after load.py and embed.py:
---   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f indexes.sql
+--   tiger db query --file indexes.sql
+--   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f indexes.sql  -- alternative
 
 -- 1. Time and metadata filters
 CREATE INDEX IF NOT EXISTS incident_events_time_idx
