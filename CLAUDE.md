@@ -16,6 +16,18 @@ cookbook-search/
 │   ├── embed.py              # OpenAI embedding generation
 │   ├── requirements.txt      # Python dependencies
 │   └── .env.example          # Environment-variable template
+├── Pg-vectorsearch/          # Managed PRISM vector-search cookbook
+│   ├── README.md             # Tiger Cloud walkthrough
+│   ├── setup.sql             # pg_vectorsearch extension and table
+│   ├── indexes.sql           # Filter, keyword, and PRISM indexes
+│   ├── generate_data.py      # Deterministic synthetic incident generator
+│   ├── load.py               # Tiger Cloud data loader
+│   ├── embed.py              # OpenAI embedding generation
+│   ├── search.py             # Semantic-search CLI
+│   ├── pyproject.toml         # uv project metadata and dependencies
+│   ├── uv.lock                # Reproducible Python dependency lockfile
+│   ├── requirements.txt      # Python dependencies
+│   └── .env.example          # Tiger Cloud and OpenAI settings
 └── State-of-Search/          # Multi-method demo and presentation
     ├── README.md             # Setup, operation, and verification guide
     ├── app/                  # Preparation, search, UI, and evaluation code
@@ -55,9 +67,10 @@ Reports results as a pass/fail checklist with specific fix instructions for each
 
 ## Conventions
 
-- **Database:** PostgreSQL 17+ with pg_textsearch and pgvectorscale extensions
-- **Python:** 3.9+ for Hybrid Search and 3.11+ for State of Search, managed
-  with uv where a local environment is needed
+- **Database:** PostgreSQL 17+ with pg_textsearch and pgvectorscale extensions;
+  the pg_vectorsearch cookbook uses PostgreSQL 18+ in Tiger Cloud
+- **Python:** 3.9+ for Hybrid Search and 3.11+ for pg_vectorsearch and State of
+  Search, managed with uv where a local environment is needed
 - **Environment variables:** stored in `.env` within each cookbook folder, loaded via `python-dotenv`
 - **SQL setup files:** idempotent with `IF NOT EXISTS`, commented section headers
 - **License:** Apache 2.0 for the repo; dataset licenses noted individually

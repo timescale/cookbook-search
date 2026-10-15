@@ -1,0 +1,13 @@
+[project]
+name = "pg-vectorsearch-tutorial"
+version = "0.1.0"
+description = "Semantic incident search tutorial using pg_vectorsearch on Tiger Cloud"
+requires-python = ">=3.11"
+dependencies = [
+  "openai>=1.0.0",
+  "psycopg[binary]>=3.1.0",
+  "python-dotenv>=1.0.0",
+]
+
+[tool.uv]
+package = false
